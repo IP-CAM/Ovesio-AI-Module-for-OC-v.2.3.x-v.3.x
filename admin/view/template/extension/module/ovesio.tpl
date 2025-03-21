@@ -205,10 +205,14 @@
                 <legend><?php echo $text_translate_feeds; ?></legend>
                 <div class="well well-sm">
                   <?php foreach ($feeds as $feed) { ?><?php echo $feed; ?><br><?php } ?>
-                  <br>
-
-                  <?php echo $text_translation_callback; ?><br><?php echo $translate_callback; ?>
                 </div>
+              </fieldset>
+              <fieldset>
+                <legend><?php echo $text_translation_callback; ?></legend>
+                <div class="well well-sm">
+                  <?php echo $translate_callback; ?>
+                </div>
+                <?php echo $text_translation_callback_helper; ?>
               </fieldset>
             </div>
           </div>

@@ -103,6 +103,7 @@ class ControllerExtensionModuleOvesio extends Controller
         $data['text_no'] = $this->language->get('text_no');
         $data['text_translate_feeds'] = $this->language->get('text_translate_feeds');
         $data['text_translation_callback'] = $this->language->get('text_translation_callback');
+        $data['text_translation_callback_helper'] = $this->language->get('text_translation_callback_helper');
 
         $data['tab_general'] = $this->language->get('tab_general');
         $data['tab_language_association'] = $this->language->get('tab_language_association');
