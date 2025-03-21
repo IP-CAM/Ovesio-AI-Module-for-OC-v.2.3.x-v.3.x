@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<modification>
+	<name>Ovesio.com</name>
+    <code>ovesio</code>
+	<version>1.0.0</version>
+	<author>Ovesio.com</author>
+	<link>https://ovesio.com</link>
+	<!-- Init Aweb Nexus -->
+	<!-- Config Set -->
+	<file path="catalog/model/import_module_example.php">
+        <operation error="log">
+        <search><![CDATA[$this->cache->delete('product');]]></search>
+        <add position="before"><![CDATA[
+            /**
+             * Ovesio.com Integration
+            **/
+            if (!$this->registry->has('ovesio')) {
+                try {
+                    $this->load->library('ovesio');
+
+                } catch (Exception $e) {}
+            } else {
+                // is enough to send only the ID of the item, because the system will automatically add the rest of the details
+                // doesn't matter how calls you made, because only a single API request will be done once the finishes loading
+                $this->ovesio->translateProduct($product_id);
+                //$this->ovesio->translateCategory($category_id);
+                //$this->ovesio->translateAttribute($attribute_id); //in order to have context, it will translate the whole attribute group of current attribute id
+                //$this->ovesio->translateOption($option_id);
+            }
+        ]]></add>
+        </operation>
+    </file>
+</modification>
