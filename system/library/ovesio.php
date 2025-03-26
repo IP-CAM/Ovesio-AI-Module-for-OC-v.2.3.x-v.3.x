@@ -123,6 +123,11 @@ class Ovesio
         $this->add('translate', 'attribute', $id);
     }
 
+    public function attribute_group($id)
+    {
+        $this->add('translate', 'attribute_group', $id);
+    }
+
     public function option($id)
     {
         $this->add('translate', 'option', $id);
@@ -498,6 +503,10 @@ class Ovesio
                 $this->request_data['data'][] = $push;
             }
         }
+
+        if(!empty($this->request_data['data'])) {
+            $this->addTranslationConditions();
+        }
     }
 
     protected function translate_product($product_ids)
@@ -597,7 +606,51 @@ class Ovesio
             ];
         }
 
-        $this->request_data['data'] = array_merge($this->request_data['data'], array_values($groups));
+        $this->request_data['data'] = array_merge($this->request_data['data'] ?? [], array_values($groups));
+
+        if(!empty($this->request_data['data'])) {
+            $this->addTranslationConditions();
+        }
+    }
+
+    protected function translate_attribute_group($attribute_group_ids)
+    {
+        $attribute_groups = $this->model->getAttributeGroups($attribute_group_ids);
+        $attribute_groups = array_column($attribute_groups, null, 'attribute_group_id');
+
+        if(empty($attribute_groups)){
+            return;
+        }
+
+        $attributes = $this->model->getGroupsAttributes($attribute_group_ids);
+
+        $groups = [];
+
+        foreach ($attribute_group_ids as $attribute_group_id) {
+            if (!isset($attribute_groups[$attribute_group_id])) continue;
+
+            $groups[$attribute_group_id] = [
+                'ref' => 'attribute_group/' . $attribute_group_id,
+                'content' => [
+                    [
+                        'key' => 'ag-' . $attribute_group_id,
+                        'value' => $attribute_groups[$attribute_group_id]['name']
+                    ]
+                ]
+            ];
+        }
+
+        foreach ($attributes as $attribute) {
+            if (!isset($groups[$attribute['attribute_group_id']])) continue;
+
+            $groups[$attribute['attribute_group_id']]['content'][] = [
+                'key' => 'a-' . $attribute['attribute_id'],
+                'context' => $attribute_groups[$attribute['attribute_group_id']]['name'],
+                'value' => $attribute['name'],
+            ];
+        }
+
+        $this->request_data['data'] = array_merge($this->request_data['data'] ?? [], array_values($groups));
 
         if(!empty($this->request_data['data'])) {
             $this->addTranslationConditions();

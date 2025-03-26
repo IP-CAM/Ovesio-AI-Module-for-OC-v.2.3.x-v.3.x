@@ -35,6 +35,9 @@
             // in order to have context, it will translate the whole attribute group of this attribute id
             //$this->ovesio->attribute($attribute_id);
 
+            // Attribute group update with all it's attributes
+            //$this->ovesio->attribute_group($attribute_group_id);
+
             // Option update
             //$this->ovesio->option($option_id);
 

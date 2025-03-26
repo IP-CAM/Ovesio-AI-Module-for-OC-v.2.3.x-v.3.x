@@ -3,7 +3,7 @@
  * Name: Ovesio
  * Url: https://ovesio.com/
  * Author: Aweb Design SRL
- * Version: 1.1
+ * Version: 1.2
  */
 
 class ControllerExtensionModuleOvesio extends Controller
@@ -20,6 +20,8 @@ class ControllerExtensionModuleOvesio extends Controller
         'admin/model/catalog/product/editProduct/after' => 'extension/module/ovesio/event/trigger',
         'admin/model/catalog/attribute/addAttribute/after' => 'extension/module/ovesio/event/trigger',
         'admin/model/catalog/attribute/editAttribute/after' => 'extension/module/ovesio/event/trigger',
+        'admin/model/catalog/attribute_group/addAttributeGroup/after' => 'extension/module/ovesio/event/trigger',
+        'admin/model/catalog/attribute_group/editAttributeGroup/after' => 'extension/module/ovesio/event/trigger',
         'admin/model/catalog/option/addOption/after' => 'extension/module/ovesio/event/trigger',
         'admin/model/catalog/option/editOption/after' => 'extension/module/ovesio/event/trigger',
     ];
@@ -119,8 +121,8 @@ class ControllerExtensionModuleOvesio extends Controller
         $data['text_translate_feeds'] = $this->language->get('text_translate_feeds');
         $data['text_translation_callback'] = $this->language->get('text_translation_callback');
         $data['text_translation_callback_helper'] = $this->language->get('text_translation_callback_helper');
-        $data['text_description_cronjob'] = $this->language->get('text_description_cronjob');
-        $data['text_description_cronjob_callback_helper'] = $this->language->get('text_description_cronjob_callback_helper');
+        $data['text_cronjob'] = $this->language->get('text_cronjob');
+        $data['text_cronjob_helper'] = $this->language->get('text_cronjob_helper');
         $data['text_description_generator_info'] = $this->language->get('text_description_generator_info');
         $data['text_translate_after_description_generator_info'] = $this->config->get($this->module_key . '_description_status') ? $this->language->get('text_translate_after_description_generator_info') : null;
         $data['text_one_time_only'] = $this->language->get('text_one_time_only');
@@ -268,8 +270,7 @@ class ControllerExtensionModuleOvesio extends Controller
 
         $data['callback'] = HTTPS_CATALOG . 'index.php?route=extension/module/ovesio/callback&hash=' . $data['hash'];
 
-        $data['description_callback'] = HTTPS_CATALOG . 'index.php?route=extension/module/ovesio/description_callback&hash=' . $data['hash'];
-        $data['description_cronjob'] = '* * * * */5 curl -k -L "' . HTTPS_CATALOG . 'index.php?route=extension/module/ovesio/description_cronjob&hash=' . $data['hash'] . '" > /dev/null 2>&1';
+        $data['description_cronjob'] = '* * * * */5 curl -k -L "' . HTTPS_CATALOG . 'index.php?route=extension/module/ovesio/cronjob&hash=' . $data['hash'] . '" > /dev/null 2>&1';
 
 		$data['header'] = $this->load->controller('common/header');
 		$data['column_left'] = $this->load->controller('common/column_left');

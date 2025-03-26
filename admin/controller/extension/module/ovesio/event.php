@@ -34,7 +34,7 @@ class ControllerExtensionModuleOvesioEvent extends Controller
             $resource_id = $data[0];
         }
 
-        if(!in_array($resource, ['product', 'category', 'attribute', 'option'])) {
+        if(!in_array($resource, ['product', 'category', 'attribute_group', 'attribute', 'option'])) {
             return;
         }
 

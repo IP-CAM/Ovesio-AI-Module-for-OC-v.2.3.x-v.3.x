@@ -102,6 +102,7 @@
                   </tbody>
                 </table>
               </fieldset>
+
               <fieldset>
                 <legend><?php echo $text_translation_callback; ?></legend>
                 <div class="well well-sm">
@@ -110,6 +111,14 @@
                 <div class="alert alert-info">
                   <?php echo $text_translation_callback_helper; ?>
                 </div>
+              </fieldset>
+
+              <fieldset>
+                <legend><?php echo $text_cronjob; ?></legend>
+                <div class="well well-sm">
+                  <?php echo $description_cronjob; ?>
+                </div>
+                <?php echo $text_cronjob_helper; ?>
               </fieldset>
             </div>
 
@@ -347,15 +356,6 @@
                     </label>
                 </div>
               </div>
-
-
-              <fieldset>
-                <legend><?php echo $text_description_cronjob; ?></legend>
-                <div class="well well-sm">
-                  <?php echo $description_cronjob; ?>
-                </div>
-                <?php echo $text_description_cronjob_callback_helper; ?>
-              </fieldset>
             </div>
           </div>
         </form>

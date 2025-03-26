@@ -95,11 +95,16 @@ class ModelExtensionModuleOvesio extends Model
         return $query->rows;
     }
 
-    public function getAttributeGroups()
+    public function getAttributeGroups($attribute_group_ids = [])
     {
+        $where = '';
+        if (!empty($attribute_group_ids)) {
+            $where = 'AND agd.attribute_group_id IN (' . implode(',', $attribute_group_ids) . ')';
+        }
+
         $query = $this->db->query("SELECT agd.attribute_group_id, agd.name FROM " . DB_PREFIX . "attribute_group_description as agd
         JOIN " . DB_PREFIX . "attribute_group as ag ON ag.attribute_group_id = agd.attribute_group_id
-        WHERE agd.language_id = {$this->from_language_id} ORDER BY ag.attribute_group_id");
+        WHERE agd.language_id = {$this->from_language_id} {$where} ORDER BY ag.attribute_group_id");
 
         return $query->rows;
     }
@@ -331,8 +336,79 @@ class ModelExtensionModuleOvesio extends Model
     }
 
     public function getCategory($category_id) {
-		$query = $this->db->query("SELECT DISTINCT *, (SELECT GROUP_CONCAT(cd1.name ORDER BY level SEPARATOR '&nbsp;&nbsp;&gt;&nbsp;&nbsp;') FROM " . DB_PREFIX . "category_path cp LEFT JOIN " . DB_PREFIX . "category_description cd1 ON (cp.path_id = cd1.category_id AND cp.category_id != cp.path_id) WHERE cp.category_id = c.category_id AND cd1.language_id = '" . (int)$this->config->get('config_language_id') . "' GROUP BY cp.category_id) AS path, " . ( $this->config->get('smp_sug_is_install') ? "(SELECT DISTINCT keyword FROM " . DB_PREFIX . "url_alias WHERE query = 'category_id=" . (int)$category_id . "' AND (smp_language_id IS NULL OR smp_language_id = " . $this->config->get('config_language_id') . ") ORDER BY smp_language_id DESC LIMIT 1 ) AS keyword" : "(SELECT DISTINCT keyword FROM " . DB_PREFIX . "url_alias WHERE query = 'category_id=" . (int)$category_id . "' LIMIT 1 ) AS keyword" ) . " FROM " . DB_PREFIX . "category c LEFT JOIN " . DB_PREFIX . "category_description cd2 ON (c.category_id = cd2.category_id) WHERE c.category_id = '" . (int)$category_id . "' AND cd2.language_id = '" . (int)$this->config->get('config_language_id') . "'");
+		$query = $this->db->query("SELECT DISTINCT c.category_id, cd2.name,
+        (SELECT GROUP_CONCAT(cd1.name ORDER BY level SEPARATOR '&nbsp;&nbsp;&gt;&nbsp;&nbsp;')
+        FROM " . DB_PREFIX . "category_path cp LEFT
+        JOIN " . DB_PREFIX . "category_description cd1 ON (cp.path_id = cd1.category_id AND cp.category_id != cp.path_id)
+        WHERE cp.category_id = c.category_id AND cd1.language_id = '" . (int)$this->config->get('config_language_id') . "'
+        GROUP BY cp.category_id) AS path
+        FROM " . DB_PREFIX . "category c
+        LEFT JOIN " . DB_PREFIX . "category_description cd2 ON (c.category_id = cd2.category_id)
+        WHERE c.category_id = '" . (int)$category_id . "' AND cd2.language_id = '" . (int)$this->config->get('config_language_id') . "'");
 
 		return $query->row;
 	}
+
+    public function getCronList($language)
+    {
+        $pwhere = '';
+        if (!$this->config->get($this->module_key . '_description_send_disabled')) {
+			$pwhere .= " AND p.quantity > '0'";
+		}
+
+        if (!$this->config->get($this->module_key . '_description_send_stock_0')) {
+            $pwhere .= " AND p.status != 0";
+        }
+
+        $cwhere = '';
+        if (!$this->config->get($this->module_key . '_send_disabled')) {
+            $cwhere .= " AND c.status != 0";
+        }
+
+        $sql = " SELECT
+                r.`resource`,
+                r.resource_id,
+                ol.id as list_id,
+                ( ol.generate_description_id IS NOT NULL AND ol.generate_description_status = 0 AND ol.generate_description_date < NOW() - INTERVAL 24 HOUR ) AS expired_description,
+                ( ol.translate_id IS NOT NULL AND ol.translate_status = 0 AND ol.translate_date < NOW() - INTERVAL 24 HOUR ) AS expired_translation
+            FROM (
+                SELECT 'attribute_group' as resource, a.attribute_group_id AS resource_id
+                FROM " . DB_PREFIX . "attribute_description as ad
+                JOIN " . DB_PREFIX . "attribute as a ON a.attribute_id = ad.attribute_id
+                WHERE ad.language_id = {$this->from_language_id}
+            UNION
+                SELECT 'option' as resource, o.option_id as resource_id
+                FROM " . DB_PREFIX . "option_description as od
+                JOIN " . DB_PREFIX . "option as o ON o.option_id = od.option_id
+                WHERE od.language_id = {$this->from_language_id}
+            UNION
+                SELECT 'category' as resource, cd.category_id as resource_id
+                FROM " . DB_PREFIX . "category_description as cd
+                JOIN " . DB_PREFIX . "category as c ON c.category_id = cd.category_id
+                WHERE cd.language_id = {$this->from_language_id} {$cwhere}
+            UNION
+                SELECT 'product' as resource, p.product_id as resource_id
+                FROM " . DB_PREFIX . "product as p
+                JOIN " . DB_PREFIX . "product_description as pd ON p.product_id = pd.product_id
+                where pd.language_id = {$this->from_language_id} {$pwhere}
+        ) as r
+        LEFT JOIN " . DB_PREFIX . "ovesio_list as ol ON ol.resource = r.resource AND ol.resource_id = r.resource_id
+        WHERE
+            (ol.id IS NULL OR ol.lang = '{$language}') AND
+            (
+                ( ol.generate_description_id IS NULL AND ol.`resource` IN ('product', 'category')) OR
+                ol.translate_id IS NULL OR
+                ( ol.generate_description_id IS NOT NULL AND ol.generate_description_status = 0 AND ol.generate_description_date < NOW() - INTERVAL 24 HOUR ) OR
+                ( ol.translate_id IS NOT NULL AND ol.translate_status = 0 AND ol.translate_date < NOW() - INTERVAL 24 HOUR )
+            )
+        LIMIT 40";
+
+        $query = $this->db->query($sql);
+
+        return $query->rows;
+    }
+
+    public function updateExpired($id, $type) {
+        $this->db->query("UPDATE " . DB_PREFIX . "ovesio_list SET {$type}_id = NULL, {$type}_hash = NULL, {$type}_date = NULL, {$type}_status = 0 WHERE id = " . (int) $id);
+    }
 }
