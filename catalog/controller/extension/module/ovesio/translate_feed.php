@@ -1,7 +1,9 @@
 <?php
 
 set_time_limit(180);
-ini_set('memory_limit','2G');
+ini_set('memory_limit','4G');
+
+require_once(modification($_SERVER['DOCUMENT_ROOT'] . '/catalog/model/extension/module/ovesio.php'));
 
 /**
  * Feed serving entire Catalog to be translated by difference
@@ -29,7 +31,10 @@ class ControllerExtensionModuleOvesioTranslateFeed extends Controller
             $this->module_key = 'module_ovesio';
         }
 
-        $this->load->model('extension/module/ovesio');
+        $this->model = new ModelExtensionModuleOvesio($registry);
+
+        $from_language_id = $this->config->get($this->module_key . '_catalog_language_id');
+        $this->model->setLanguageId($from_language_id);
     }
 
     public function index()
@@ -49,7 +54,6 @@ class ControllerExtensionModuleOvesioTranslateFeed extends Controller
             }
         }
 
-        $this->sentKeys = (array)$this->config->get($this->module_key . '_translate_fields');
         $from_language_id = $this->config->get($this->module_key . '_catalog_language_id');
         $languages = $this->config->get($this->module_key . '_language_match');
         $this->output['from'] = $languages[$from_language_id]['code'];
@@ -94,7 +98,12 @@ class ControllerExtensionModuleOvesioTranslateFeed extends Controller
 
     protected function category()
     {
-        $categories = $this->model_extension_module_ovesio->getCategories();
+        $categories = $this->model->getCategories(
+            [],
+            $this->config->get($this->module_key . '_send_disabled')
+        );
+
+        $translate_fields = (array)$this->config->get($this->module_key . '_translate_fields');
 
         foreach ($categories as $i => $category) {
             $push = [
@@ -102,7 +111,7 @@ class ControllerExtensionModuleOvesioTranslateFeed extends Controller
                 'content' => []
             ];
 
-            foreach ($this->sentKeys['category'] as $key => $send) {
+            foreach ($translate_fields['category'] as $key => $send) {
                 if (!$send || empty($category[$key])) continue;
 
                 $push['content'][] = [
@@ -119,13 +128,19 @@ class ControllerExtensionModuleOvesioTranslateFeed extends Controller
 
     protected function product()
     {
-        $products = $this->model_extension_module_ovesio->getProducts();
+        $products = $this->model->getProducts(
+            [],
+            $this->config->get($this->module_key . '_send_disabled'),
+            $this->config->get($this->module_key . '_send_stock_0')
+        );
 
         // chunk get attributes based on product_id
-        $attributes = $this->model_extension_module_ovesio->getAttributes();
+        $attributes = $this->model->getAttributes();
         $attributes = array_column($attributes, 'name', 'attribute_id');
 
-        $product_attributes = $this->model_extension_module_ovesio->getProductAttributeIds();
+        $product_attributes = $this->model->getProductsAttributes();
+
+        $translate_fields = (array)$this->config->get($this->module_key . '_translate_fields');
 
         foreach ($products as $i => $product) {
             $push = [
@@ -133,7 +148,7 @@ class ControllerExtensionModuleOvesioTranslateFeed extends Controller
                 'content' => []
             ];
 
-            foreach ($this->sentKeys['product'] as $key => $send) {
+            foreach ($translate_fields['product'] as $key => $send) {
                 if (!$send || empty($product[$key])) continue;
 
                 $push['content'][] = [
@@ -158,10 +173,10 @@ class ControllerExtensionModuleOvesioTranslateFeed extends Controller
 
     protected function attribute()
     {
-        $attribute_groups = $this->model_extension_module_ovesio->getAttributeGroups();
+        $attribute_groups = $this->model->getAttributeGroups();
         $attributes = [];
 
-        $a = $this->model_extension_module_ovesio->getAttributes();
+        $a = $this->model->getAttributes();
         foreach ($a as $a) {
             $attributes[$a['attribute_group_id']][] = $a;
         }
@@ -193,8 +208,8 @@ class ControllerExtensionModuleOvesioTranslateFeed extends Controller
 
     protected function option()
     {
-        $options = $this->model_extension_module_ovesio->getOptions();
-        $option_values = $this->model_extension_module_ovesio->getOptionValues();
+        $options = $this->model->getOptions();
+        $option_values = $this->model->getOptionValues();
 
         $_option_values = [];
         foreach ($option_values as $option_value) {

@@ -2,30 +2,26 @@
 
 class ModelExtensionModuleOvesio extends Model
 {
-    private $module_key = 'ovesio';
+    private $from_language_id;
 
     public function __construct($registry)
     {
         parent::__construct($registry);
-
-        /**
-         * Changes needed for v3
-         */
-        if(version_compare(VERSION, '3.0.0.0') >= 0) {
-            $this->module_key = 'module_ovesio';
-        }
-
-        $this->from_language_id = (int)$this->config->get($this->module_key . '_catalog_language_id');
     }
 
-    public function getCategories($category_ids = [])
+    public function setLanguageId($language_id)
+    {
+        $this->from_language_id = $language_id;
+    }
+
+    public function getCategories($category_ids = [], $status)
     {
         $where = '';
         if (!empty($category_ids)) {
             $where = 'AND c.category_id IN (' . implode(',', $category_ids) . ')';
         }
 
-        if (!$this->config->get($this->module_key . '_send_disabled')) {
+        if (!$status) {
             $where .= " AND c.status != 0";
         }
 
@@ -37,18 +33,18 @@ class ModelExtensionModuleOvesio extends Model
         return $query->rows;
     }
 
-    public function getProducts($product_id = [])
+    public function getProducts($product_id = [], $status, $out_of_stock)
     {
         $where = '';
         if (!empty($product_id)) {
             $where = ' AND p.product_id IN (' . implode(',', $product_id) . ')';
         }
 
-        if (!$this->config->get($this->module_key . '_send_stock_0')) {
-			$where .= " AND (p.quantity > '0' OR p.stock_status_id != '" . (int)$this->config->get('config_stock_status_out') . "')";
+        if (!$out_of_stock) {
+			$where .= " AND p.quantity > '0'";
 		}
 
-        if (!$this->config->get($this->module_key . '_send_disabled')) {
+        if (!$status) {
             $where .= " AND p.status != 0";
         }
 
@@ -60,7 +56,7 @@ class ModelExtensionModuleOvesio extends Model
         return $query->rows;
     }
 
-    public function getProductAttributeIds($product_ids = [])
+    public function getProductsAttributes($product_ids = [])
     {
         $where = '';
         if (!empty($product_ids)) {
@@ -276,4 +272,67 @@ class ModelExtensionModuleOvesio extends Model
 
         return $data;
     }
+
+    public function hasDescription(string $resource, array $resource_ids)
+    {
+        $query = $this->db->query("SELECT resource_id, generate_description_hash FROM " . DB_PREFIX . "ovesio_list WHERE `resource` = '" . $resource . "' AND `resource_id` IN (" . implode(',', $resource_ids) . ") AND generate_description_id >= 0 GROUP BY resource_id");
+
+        $status = array_fill_keys($resource_ids, null);
+        foreach($query->rows as $row) {
+            $status[$row['resource_id']] = $row['generate_description_hash'];
+        }
+
+        return $status;
+    }
+
+    public function addList(array $where = [], array $data = [])
+    {
+        if (empty($where) || empty($data)) {
+            return;
+        }
+
+        $where_sql = [];
+        foreach ($where as $key => $value) {
+            $where_sql[] = "`" . $key . "` = '" . $this->db->escape($value) . "'";
+        }
+
+        $fields_sql = [];
+        foreach ($data as $key => $value) {
+            $fields_sql[] = "`" . $key . "` = '" . $this->db->escape($value) . "'";
+        }
+
+        // check if exists first
+        $query = $this->db->query("SELECT id FROM " . DB_PREFIX . "ovesio_list WHERE " . implode(' AND ', $where_sql));
+
+        if ($query->row) {
+            $this->db->query("UPDATE " . DB_PREFIX . "ovesio_list SET " . implode(', ', $fields_sql) . " WHERE id = " . (int) $query->row['id']);
+
+            return $query->row['id'];
+        } else {
+            $fields_sql = array_merge($where_sql, $fields_sql);
+
+            $this->db->query("INSERT INTO " . DB_PREFIX . "ovesio_list SET " . implode(', ', $fields_sql));
+
+            return $this->db->getLastId();
+        }
+    }
+
+    public function getProductCategories($product_ids)
+    {
+        $product_category_data = [];
+
+        $query = $this->db->query("SELECT * FROM " . DB_PREFIX . "product_to_category WHERE product_id IN (". implode(',', $product_ids) . ")");
+
+        foreach ($query->rows as $result) {
+            $product_category_data[$result['product_id']][] = $result['category_id'];
+        }
+
+        return $product_category_data;
+    }
+
+    public function getCategory($category_id) {
+		$query = $this->db->query("SELECT DISTINCT *, (SELECT GROUP_CONCAT(cd1.name ORDER BY level SEPARATOR '&nbsp;&nbsp;&gt;&nbsp;&nbsp;') FROM " . DB_PREFIX . "category_path cp LEFT JOIN " . DB_PREFIX . "category_description cd1 ON (cp.path_id = cd1.category_id AND cp.category_id != cp.path_id) WHERE cp.category_id = c.category_id AND cd1.language_id = '" . (int)$this->config->get('config_language_id') . "' GROUP BY cp.category_id) AS path, " . ( $this->config->get('smp_sug_is_install') ? "(SELECT DISTINCT keyword FROM " . DB_PREFIX . "url_alias WHERE query = 'category_id=" . (int)$category_id . "' AND (smp_language_id IS NULL OR smp_language_id = " . $this->config->get('config_language_id') . ") ORDER BY smp_language_id DESC LIMIT 1 ) AS keyword" : "(SELECT DISTINCT keyword FROM " . DB_PREFIX . "url_alias WHERE query = 'category_id=" . (int)$category_id . "' LIMIT 1 ) AS keyword" ) . " FROM " . DB_PREFIX . "category c LEFT JOIN " . DB_PREFIX . "category_description cd2 ON (c.category_id = cd2.category_id) WHERE c.category_id = '" . (int)$category_id . "' AND cd2.language_id = '" . (int)$this->config->get('config_language_id') . "'");
+
+		return $query->row;
+	}
 }

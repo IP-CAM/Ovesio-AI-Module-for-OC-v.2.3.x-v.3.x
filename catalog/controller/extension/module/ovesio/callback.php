@@ -1,6 +1,8 @@
 <?php
 
-class ControllerExtensionModuleOvesioTranslateCallback extends Controller
+require_once(modification($_SERVER['DOCUMENT_ROOT'] . '/catalog/model/extension/module/ovesio.php'));
+
+class ControllerExtensionModuleOvesioCallback extends Controller
 {
     private $output = [];
     private $module_key = 'ovesio';
@@ -8,14 +10,17 @@ class ControllerExtensionModuleOvesioTranslateCallback extends Controller
     public function __construct($registry) {
         parent::__construct($registry);
 
-        $this->load->model('extension/module/ovesio');
-
         /**
          * Changes needed for v3
          */
         if(version_compare(VERSION, '3.0.0.0') >= 0) {
             $this->module_key = 'module_ovesio';
         }
+
+        $this->model = new ModelExtensionModuleOvesio($registry);
+
+        $from_language_id = $this->config->get($this->module_key . '_catalog_language_id');
+        $this->model->setLanguageId($from_language_id);
     }
 
     public function index()
@@ -62,12 +67,15 @@ class ControllerExtensionModuleOvesioTranslateCallback extends Controller
         list($method, $identifier) = explode('/', $data['ref']);
         $language_code = $data['to'];
 
-        if (! method_exists($this, $method)) {
-            throw new Exception('Method "' . $method . '" not found, wrong response type');
+        $is_description = !empty($this->request->get['type']) && $this->request->get['type'] == 'description';
+        if($is_description) {
+            $status = $this->config->get($this->module_key . '_description_status');
+        } else {
+            $status = $this->config->get($this->module_key . '_translation_status');
         }
 
-        if(in_array($method, ['product', 'category', 'attribute_group', 'option']) && !$this->config->get($this->module_key . '_translation_status')) {
-            return $this->setOutput(['error' => 'Translation status is disabled!']);
+        if(in_array($method, ['product', 'category', 'attribute_group', 'option']) && !$status) {
+            return $this->setOutput(['error' => 'This operation is disabled!']);
         }
 
         if (empty($identifier)) {
@@ -94,14 +102,59 @@ class ControllerExtensionModuleOvesioTranslateCallback extends Controller
 
         $data['language_id'] = $query->row['language_id'];
 
+        $method = $is_description ? 'generate_description_' . $method : 'translate_' . $method;
+
+        if (! method_exists($this, $method)) {
+            throw new Exception('Method "' . $method . '" not found, wrong response type');
+        }
+
         $this->{$method}($identifier, $data);
+
+        // Update log table
+        $filed_type = !$is_description ? 'translate' : 'generate_description';
+        list($resource, $resource_id) = explode('/', $data['ref']);
+
+        $this->model->addList([
+            'resource' => $resource,
+            'resource_id' => $resource_id,
+            'lang' => $filed_type == 'translate' ? $data['from'] : $data['to']
+        ],[
+            $filed_type . '_id' => $data['id'],
+            $filed_type . '_status' => 1,
+        ]);
+
+        //if is description, send to translate
+        if($filed_type == 'generate_description') {
+            $this->load->library('ovesio');
+
+            $this->ovesio->add('translate', $resource, $resource_id);
+            $this->ovesio->sendData();
+        }
 
         $this->setOutput(array_merge($this->output, [
             'success' => true
         ]));
     }
 
-    protected function product($product_id, $data)
+    protected function generate_description_product($product_id, $data)
+    {
+        $product_description['description'] = $data['content']['description'];
+
+        $this->model->updateProductDescription($product_id, $data['language_id'], $product_description);
+
+        $this->seoProduct($product_id, $data['language_id'], $product_description);
+    }
+
+    protected function generate_description_category($category_id, $data)
+    {
+        $category_description['description'] = $data['content']['description'];
+
+        $this->model->updateCategoryDescription($category_id, $data['language_id'], $category_description);
+
+        $this->seoCategory($category_id, $data['language_id'], $category_description);
+    }
+
+    protected function translate_product($product_id, $data)
     {
         $translate_fields = $this->config->get($this->module_key . '_translate_fields');
 
@@ -122,17 +175,19 @@ class ControllerExtensionModuleOvesioTranslateCallback extends Controller
         }
 
         if (!empty($product_description)) {
-            $this->model_extension_module_ovesio->updateProductDescription($product_id, $data['language_id'], $product_description);
+            $this->model->updateProductDescription($product_id, $data['language_id'], $product_description);
         }
 
         foreach ($attribute_values as $attribute_id => $text) {
-            $this->model_extension_module_ovesio->updateAttributeValueDescription($product_id, $attribute_id, $data['language_id'], $text);
+            $this->model->updateAttributeValueDescription($product_id, $attribute_id, $data['language_id'], $text);
         }
 
-        $this->seoProduct($product_id, $data['language_id'], $product_description);
+        if (!empty($product_description)) {
+            $this->seoProduct($product_id, $data['language_id'], $product_description);
+        }
     }
 
-    protected function category($category_id, $data)
+    protected function translate_category($category_id, $data)
     {
         $translate_fields = $this->config->get($this->module_key . '_translate_fields');
 
@@ -148,21 +203,22 @@ class ControllerExtensionModuleOvesioTranslateCallback extends Controller
         }
 
         if (!empty($category_description)) {
-            $this->model_extension_module_ovesio->updateCategoryDescription($category_id, $data['language_id'], $category_description);
+            $this->model->updateCategoryDescription($category_id, $data['language_id'], $category_description);
+
             $this->seoCategory($category_id, $data['language_id'], $category_description);
         }
     }
 
-    protected function attribute_group($attribute_group_id, $data)
+    protected function translate_attribute_group($attribute_group_id, $data)
     {
         foreach ($data['content'] as $item) {
             if (strpos($item['key'], 'ag-') === 0) {
                 $attribute_group_id = str_replace('ag-', '', $item['key']);
-                $this->model_extension_module_ovesio->updateAttributeGroupDescription($attribute_group_id, $data['language_id'], $item['value']);
+                $this->model->updateAttributeGroupDescription($attribute_group_id, $data['language_id'], $item['value']);
             }
             elseif (strpos($item['key'], 'a-') === 0) {
                 $attribute_id = str_replace('a-', '', $item['key']);
-                $this->model_extension_module_ovesio->updateAttributeDescription($attribute_id, $data['language_id'], $item['value']);
+                $this->model->updateAttributeDescription($attribute_id, $data['language_id'], $item['value']);
             }
             else {
                 $this->output['warnings'][] = 'Unknown key "' . $item['key'] . '"';
@@ -170,16 +226,16 @@ class ControllerExtensionModuleOvesioTranslateCallback extends Controller
         }
     }
 
-    protected function option($option_id, $data)
+    protected function translate_option($option_id, $data)
     {
         foreach ($data['content'] as $item) {
             if (strpos($item['key'], 'o-') === 0) {
                 $option_id = str_replace('o-', '', $item['key']);
-                $this->model_extension_module_ovesio->updateOptionDescription($option_id, $data['language_id'], $item['value']);
+                $this->model->updateOptionDescription($option_id, $data['language_id'], $item['value']);
             }
             elseif (strpos($item['key'], 'ov-') === 0) {
                 $option_value_id = str_replace('ov-', '', $item['key']);
-                $this->model_extension_module_ovesio->updateOptionValueDescription($option_value_id, $data['language_id'], $item['value']);
+                $this->model->updateOptionValueDescription($option_value_id, $data['language_id'], $item['value']);
             }
             else {
                 $this->output['warnings'][] = 'Unknown key "' . $item['key'] . '"';
@@ -197,7 +253,7 @@ class ControllerExtensionModuleOvesioTranslateCallback extends Controller
             return;
         }
 
-        $data = $this->model_extension_module_ovesio->getProductForSeo($product_id, $language_id);
+        $data = $this->model->getProductForSeo($product_id, $language_id);
         $data['product_description'][$language_id] = array_merge($data['product_description'][$language_id], $product_description);
 
         // discard not translated fields to re-compose them with seo based on new translation
@@ -219,7 +275,7 @@ class ControllerExtensionModuleOvesioTranslateCallback extends Controller
             return;
         }
 
-        $data = $this->model_extension_module_ovesio->getCategoryForSeo($category_id, $language_id);
+        $data = $this->model->getCategoryForSeo($category_id, $language_id);
         $data['category_description'][$language_id] = array_merge($data['category_description'][$language_id], $category_description);
 
         // discard not translated fields to re-compose them with seo based on new translation

@@ -1,23 +1,27 @@
 <?php
+/**
+ * Name: Ovesio
+ * Url: https://ovesio.com/
+ * Author: Aweb Design SRL
+ * Version: 1.1
+ */
 
 class ControllerExtensionModuleOvesio extends Controller
 {
-    private $error = array();
+    private $error = [];
     private $events = [];
 
     private $iso2 = ['en', 'bg', 'hr', 'cs', 'da', 'nl', 'et', 'fi', 'fr', 'de', 'el', 'hu', 'ga', 'it', 'lv', 'lt', 'mt', 'no', 'pl', 'pt', 'ro', 'ru', 'sr', 'sk', 'sl', 'es', 'sv', 'tr'];
 
-    private $live_translate_events = [
-        'admin/model/catalog/category/addCategory/after' => 'extension/module/ovesio/translate_event/admin',
-        'admin/model/catalog/category/editCategory/after' => 'extension/module/ovesio/translate_event/admin',
-        'admin/model/catalog/product/addProduct/after' => 'extension/module/ovesio/translate_event/admin',
-        'admin/model/catalog/product/editProduct/after' => 'extension/module/ovesio/translate_event/admin',
-        'admin/model/catalog/attribute/addAttribute/after' => 'extension/module/ovesio/translate_event/admin',
-        'admin/model/catalog/attribute/editAttribute/after' => 'extension/module/ovesio/translate_event/admin',
-        'admin/model/catalog/option/addOption/after' => 'extension/module/ovesio/translate_event/admin',
-        'admin/model/catalog/option/editOption/after' => 'extension/module/ovesio/translate_event/admin',
-        'admin/ovesio_translate_event' => 'extension/module/ovesio/translate_event',
-        'catalog/ovesio_translate_event' => 'extension/module/ovesio/translate_event',
+    private $live_events = [
+        'admin/model/catalog/category/addCategory/after' => 'extension/module/ovesio/event/trigger',
+        'admin/model/catalog/category/editCategory/after' => 'extension/module/ovesio/event/trigger',
+        'admin/model/catalog/product/addProduct/after' => 'extension/module/ovesio/event/trigger',
+        'admin/model/catalog/product/editProduct/after' => 'extension/module/ovesio/event/trigger',
+        'admin/model/catalog/attribute/addAttribute/after' => 'extension/module/ovesio/event/trigger',
+        'admin/model/catalog/attribute/editAttribute/after' => 'extension/module/ovesio/event/trigger',
+        'admin/model/catalog/option/addOption/after' => 'extension/module/ovesio/event/trigger',
+        'admin/model/catalog/option/editOption/after' => 'extension/module/ovesio/event/trigger',
     ];
 
     private $defaults = [
@@ -27,7 +31,7 @@ class ControllerExtensionModuleOvesio extends Controller
         'language_match' => [],
         'language_status' => [],
         'token' => '',
-        'live_translate' => 1,
+        // 'live_translate' => 1,
         'send_stock_0' => false,
         'send_disabled' => false,
         'translate_fields' => [
@@ -48,7 +52,17 @@ class ControllerExtensionModuleOvesio extends Controller
                 // 'image_title',
                 // 'image_alt',
             ]
-        ]
+        ],
+        'description_status' => 0,
+        'live_description' => 1,
+        'generate_product_description' => 1,
+        'generate_category_description' => 1,
+        'description_send_stock_0' => false,
+        'description_send_disabled' => false,
+        'minimum_product_descrition' => 500,
+        'minimum_category_descrition' => 300,
+        'create_description_one_time_only' => 1,
+        //'translate_one_time_only' => 0,
     ];
 
     private $token = 'token';
@@ -87,6 +101,7 @@ class ControllerExtensionModuleOvesio extends Controller
         $data['text_translate_status_helper'] = $this->language->get('text_translate_status_helper');
         $data['text_translate_from'] = $this->language->get('text_translate_from');
         $data['text_language_association'] = $this->language->get('text_language_association');
+        $data['text_language_translations'] = $this->language->get('text_language_translations');
         $data['text_translated_fields'] = $this->language->get('text_translated_fields');
         $data['text_products'] = $this->language->get('text_products');
         $data['text_categories'] = $this->language->get('text_categories');
@@ -104,8 +119,21 @@ class ControllerExtensionModuleOvesio extends Controller
         $data['text_translate_feeds'] = $this->language->get('text_translate_feeds');
         $data['text_translation_callback'] = $this->language->get('text_translation_callback');
         $data['text_translation_callback_helper'] = $this->language->get('text_translation_callback_helper');
+        $data['text_description_cronjob'] = $this->language->get('text_description_cronjob');
+        $data['text_description_cronjob_callback_helper'] = $this->language->get('text_description_cronjob_callback_helper');
+        $data['text_description_generator_info'] = $this->language->get('text_description_generator_info');
+        $data['text_translate_after_description_generator_info'] = $this->config->get($this->module_key . '_description_status') ? $this->language->get('text_translate_after_description_generator_info') : null;
+        $data['text_one_time_only'] = $this->language->get('text_one_time_only');
+        $data['text_on_each_update'] = $this->language->get('text_on_each_update');
+        $data['text_other_translations'] = $this->language->get('text_other_translations');
+
+        $data['text_translate_after_description_generator_info'] = null;
+        if($this->config->get($this->module_key . '_description_status')) {
+            $data['text_translate_after_description_generator_info'] = $this->language->get('text_translate_after_description_generator_info');
+        }
 
         $data['tab_general'] = $this->language->get('tab_general');
+        $data['tab_description_generator'] = $this->language->get('tab_description_generator');
         $data['tab_language_association'] = $this->language->get('tab_language_association');
 
         // Entry
@@ -114,10 +142,21 @@ class ControllerExtensionModuleOvesio extends Controller
         $data['entry_api'] = $this->language->get('entry_api');
         $data['entry_token_helper'] = $this->language->get('entry_token_helper');
         $data['entry_catalog_language'] = $this->language->get('entry_catalog_language');
-        $data['entry_live_translate'] = $this->language->get('entry_live_translate');
-        $data['help_live_translate'] = $this->language->get('help_live_translate');
+        // $data['entry_live_translate'] = $this->language->get('entry_live_translate');
+        // $data['help_live_translate'] = $this->language->get('help_live_translate');
+        // $data['entry_live_description'] = $this->language->get('entry_live_description');
+        // $data['help_live_description'] = $this->language->get('help_live_description');
         $data['entry_send_stock_0'] = $this->language->get('entry_send_stock_0');
         $data['entry_send_disabled'] = $this->language->get('entry_send_disabled');
+        $data['entry_generate_product_description'] = $this->language->get('entry_generate_product_description');
+        $data['entry_generate_category_description'] = $this->language->get('entry_generate_category_description');
+        $data['entry_minimum_description_length_category'] = $this->language->get('entry_minimum_description_length_category');
+        $data['entry_minimum_description_length_product'] = $this->language->get('entry_minimum_description_length_product');
+        $data['entry_create_a_new_description'] = $this->language->get('entry_create_a_new_description');
+        $data['entry_create_a_new_translation'] = $this->language->get('entry_create_a_new_translation');
+
+        $data['button_cancel'] = $this->language->get('button_cancel');
+        $data['button_save'] = $this->language->get('button_save');
 
         // Error
         $data['error_permission'] = $this->language->get('error_permission');
@@ -138,7 +177,7 @@ class ControllerExtensionModuleOvesio extends Controller
 
 			$this->model_setting_setting->editSetting($this->module_key, $post);
 
-            $this->liveTranslate($this->request->post['live_translate']);
+            // $this->liveTranslate($this->request->post['live_translate']);
 
 			$this->session->data['success'] = $this->language->get('text_success');
 
@@ -153,7 +192,7 @@ class ControllerExtensionModuleOvesio extends Controller
 
         $data['error'] = $this->error;
 
-		$data['breadcrumbs'] = array();
+		$data['breadcrumbs'] = [];
 
 		$data['breadcrumbs'][] = array(
 			'text' => $this->language->get('text_home'),
@@ -227,7 +266,10 @@ class ControllerExtensionModuleOvesio extends Controller
             HTTPS_CATALOG . 'index.php?route=extension/module/ovesio/translate_feed&hash=' . $data['hash'] . '&type=option',
         ];
 
-        $data['translate_callback'] = HTTPS_CATALOG . 'index.php?route=extension/module/ovesio/translate_callback&hash=' . $data['hash'];
+        $data['callback'] = HTTPS_CATALOG . 'index.php?route=extension/module/ovesio/callback&hash=' . $data['hash'];
+
+        $data['description_callback'] = HTTPS_CATALOG . 'index.php?route=extension/module/ovesio/description_callback&hash=' . $data['hash'];
+        $data['description_cronjob'] = '* * * * */5 curl -k -L "' . HTTPS_CATALOG . 'index.php?route=extension/module/ovesio/description_cronjob&hash=' . $data['hash'] . '" > /dev/null 2>&1';
 
 		$data['header'] = $this->load->controller('common/header');
 		$data['column_left'] = $this->load->controller('common/column_left');
@@ -241,9 +283,9 @@ class ControllerExtensionModuleOvesio extends Controller
 			$this->error['warning'] = $this->language->get('error_permission');
 		}
 
-        if (empty($this->request->post['live_translate'])) {
-            $this->liveTranslate(0);
-        }
+        // if (empty($this->request->post['live_translate'])) {
+        //     $this->liveTranslate(0);
+        // }
 
         // check if token
         if (!empty($this->request->post['status'])) {
@@ -277,14 +319,17 @@ class ControllerExtensionModuleOvesio extends Controller
 		return !$this->error;
 	}
 
-    protected function liveTranslate($status) {
-        $status = $status ? 1 : 0;
+    // protected function liveTranslate($status) {
+    //     $status = $status ? 1 : 0;
 
-        $this->db->query("UPDATE `" . DB_PREFIX . "event` SET status = '" . (int)$status . "' WHERE code = '{$this->module_key}' AND action IN ('" . implode("', '", $this->live_translate_events) . "')");
-    }
+    //     $this->db->query("UPDATE `" . DB_PREFIX . "event` SET status = '" . (int)$status . "' WHERE code = '{$this->module_key}' AND action IN ('" . implode("', '", $this->live_events) . "')");
+    // }
 
     public function install()
     {
+        $this->load->model('extension/module/ovesio');
+        $this->model_extension_module_ovesio->install();
+
         $this->load->model($this->event_model);
         $model_name = 'model_' . str_replace('/', '_', $this->event_model);
         $model =  $this->$model_name;
@@ -300,7 +345,7 @@ class ControllerExtensionModuleOvesio extends Controller
             $model->addEvent($this->module_key, $key, $value);
         }
 
-        foreach ($this->live_translate_events as $key => $value) {
+        foreach ($this->live_events as $key => $value) {
             $model->addEvent($this->module_key, $key, $value);
         }
     }

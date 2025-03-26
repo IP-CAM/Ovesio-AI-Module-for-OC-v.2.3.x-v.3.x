@@ -22,22 +22,24 @@
             }
 
             /**
-             * is enough to send only the ID of the item, because the system will automatically add the rest of the details
-             * doesn't matter how calls you made, because only a single API request will be done once the finishes loading
+             * It is enough to send only the item ID, as the system will automatically add the rest of the details and determine the type of operation – translation or description generation – depending on the module options.
             **/
 
             // Product update
-            $this->ovesio->translateProduct($product_id);
+            $this->ovesio->product($product_id);
 
             // Category update
-            //$this->ovesio->translateCategory($category_id);
+            //$this->ovesio->category($category_id);
 
             // Attribute update
             // in order to have context, it will translate the whole attribute group of this attribute id
-            //$this->ovesio->translateAttribute($attribute_id);
+            //$this->ovesio->attribute($attribute_id);
 
             // Option update
-            //$this->ovesio->translateOption($option_id);
+            //$this->ovesio->option($option_id);
+
+            // Execute request after collecting all the data
+            $this->ovesio->sendData();
         ]]></add>
         </operation>
     </file>

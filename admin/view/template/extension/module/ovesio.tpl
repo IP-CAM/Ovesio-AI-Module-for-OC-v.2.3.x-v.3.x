@@ -29,6 +29,7 @@
         <input type="hidden" name="hash" value="<?php echo $hash; ?>"/>
           <ul class="nav nav-tabs">
             <li class="active"><a href="#tab-general" data-toggle="tab"><?php echo $tab_general; ?></a></li>
+            <li><a href="#tab-description-generator" data-toggle="tab"><?php echo $tab_description_generator; ?></a></li>
             <li><a href="#tab-language-association" data-toggle="tab"><?php echo $tab_language_association; ?></a></li>
           </ul>
           <div class="tab-content">
@@ -75,67 +76,12 @@
                   </select>
                 </div>
               </div>
-            </div>
-
-            <div class="tab-pane" id="tab-language-association">
-                <div class="form-group">
-                    <label class="col-sm-2 control-label" for="input-translation-status"><?php echo $entry_status; ?></label>
-                    <div class="col-sm-10">
-                      <select name="translation_status" id="translation-status" class="form-control">
-                        <?php if ($translation_status) { ?>
-                        <option value="1" selected="selected"><?php echo $text_enabled; ?></option>
-                        <option value="0"><?php echo $text_disabled; ?></option>
-                        <?php } else { ?>
-                        <option value="1"><?php echo $text_enabled; ?></option>
-                        <option value="0" selected="selected"><?php echo $text_disabled; ?></option>
-                        <?php } ?>
-                      </select>
-                    </div>
-                  </div>
-                <div class="form-group">
-                    <label class="col-sm-2 control-label" for="input-live-translate"><span data-toggle="tooltip" title="<?php echo $help_live_translate; ?>"><?php echo $entry_live_translate; ?></span></label>
-                    <div class="col-sm-10">
-                        <label class="radio-inline">
-                        <input type="radio" name="live_translate" value="1" <?php echo $live_translate ? 'CHECKED' : ''; ?> /> <?php echo $text_enabled; ?>
-                        </label>
-                        <label class="radio-inline">
-                        <input type="radio" name="live_translate" value="0" <?php echo !$live_translate ? 'CHECKED' : ''; ?> /> <?php echo $text_disabled; ?>
-                        </label>
-                    </div>
-                    </div>
-
-                    <div class="form-group">
-                    <label class="col-sm-2 control-label" for="input-send-stock-0"><?php echo $entry_send_stock_0; ?></label>
-                    <div class="col-sm-10">
-                        <label class="radio-inline">
-                        <input type="radio" name="send_stock_0" value="1" <?php echo $send_stock_0 ? 'CHECKED' : ''; ?> /> <?php echo $text_enabled; ?>
-                        </label>
-                        <label class="radio-inline">
-                        <input type="radio" name="send_stock_0" value="0" <?php echo !$send_stock_0 ? 'CHECKED' : ''; ?> /> <?php echo $text_disabled; ?>
-                        </label>
-                    </div>
-                    </div>
-
-                    <div class="form-group">
-                    <label class="col-sm-2 control-label" for="input-send-disabled"><?php echo $entry_send_disabled; ?></label>
-                    <div class="col-sm-10">
-                        <label class="radio-inline">
-                        <input type="radio" name="send_disabled" value="1" <?php echo $send_disabled ? 'CHECKED' : ''; ?> /> <?php echo $text_enabled; ?>
-                        </label>
-                        <label class="radio-inline">
-                        <input type="radio" name="send_disabled" value="0" <?php echo !$send_disabled ? 'CHECKED' : ''; ?> /> <?php echo $text_disabled; ?>
-                        </label>
-                    </div>
-                </div>
-
               <fieldset class="table-responsive">
                 <legend><?php echo $text_language_association; ?></legend>
                 <table class="table table-bordered">
                   <thead>
                     <th><?php echo $text_system_language; ?></th>
                     <th><?php echo $text_iso2_language; ?></th>
-                    <th><span class="fa fa-question-circle cursor-pointer" data-toggle="tooltip" title="<?php echo $text_translate_status_helper; ?>"></span> <?php echo $text_translate_status; ?></th>
-                    <th><?php echo $text_translate_from; ?></th>
                   </thead>
                   <tbody>
                     <?php foreach ($languages as $language) { ?>
@@ -152,6 +98,101 @@
                         <span class="text-danger"><?php echo $error[$language['language_id']]['code']; ?></span>
                         <?php } ?>
                       </td>
+                      <?php } ?>
+                  </tbody>
+                </table>
+              </fieldset>
+              <fieldset>
+                <legend><?php echo $text_translation_callback; ?></legend>
+                <div class="well well-sm">
+                  <?php echo $callback; ?>
+                </div>
+                <div class="alert alert-info">
+                  <?php echo $text_translation_callback_helper; ?>
+                </div>
+              </fieldset>
+            </div>
+
+            <div class="tab-pane" id="tab-language-association">
+                <?php if($text_translate_after_description_generator_info) { ?>
+                <div class="alert alert-info">
+                  <?php echo $text_translate_after_description_generator_info; ?>
+                </div>
+                <?php } ?>
+                <div class="form-group">
+                    <label class="col-sm-2 control-label" for="translation-status"><?php echo $entry_status; ?></label>
+                    <div class="col-sm-10">
+                      <select name="translation_status" id="translation-status" class="form-control">
+                        <?php if ($translation_status) { ?>
+                        <option value="1" selected="selected"><?php echo $text_enabled; ?></option>
+                        <option value="0"><?php echo $text_disabled; ?></option>
+                        <?php } else { ?>
+                        <option value="1"><?php echo $text_enabled; ?></option>
+                        <option value="0" selected="selected"><?php echo $text_disabled; ?></option>
+                        <?php } ?>
+                      </select>
+                    </div>
+                  </div>
+                <!-- <div class="form-group">
+                    <label class="col-sm-2 control-label" for="input-live-translate"><span data-toggle="tooltip" title="<?php echo $help_live_translate; ?>"><?php echo $entry_live_translate; ?></span></label>
+                    <div class="col-sm-10">
+                        <label class="radio-inline">
+                        <input type="radio" name="live_translate" value="1" <?php echo $live_translate ? 'CHECKED' : ''; ?> /> <?php echo $text_enabled; ?>
+                        </label>
+                        <label class="radio-inline">
+                        <input type="radio" name="live_translate" value="0" <?php echo !$live_translate ? 'CHECKED' : ''; ?> /> <?php echo $text_disabled; ?>
+                        </label>
+                    </div>
+                </div> -->
+
+                <div class="form-group">
+                  <label class="col-sm-2 control-label" for="input-send-stock-0"><?php echo $entry_send_stock_0; ?></label>
+                  <div class="col-sm-10">
+                      <label class="radio-inline">
+                      <input type="radio" name="send_stock_0" value="1" <?php echo $send_stock_0 ? 'CHECKED' : ''; ?> /> <?php echo $text_enabled; ?>
+                      </label>
+                      <label class="radio-inline">
+                      <input type="radio" name="send_stock_0" value="0" <?php echo !$send_stock_0 ? 'CHECKED' : ''; ?> /> <?php echo $text_disabled; ?>
+                      </label>
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label class="col-sm-2 control-label" for="input-send-disabled"><?php echo $entry_send_disabled; ?></label>
+                  <div class="col-sm-10">
+                      <label class="radio-inline">
+                      <input type="radio" name="send_disabled" value="1" <?php echo $send_disabled ? 'CHECKED' : ''; ?> /> <?php echo $text_enabled; ?>
+                      </label>
+                      <label class="radio-inline">
+                      <input type="radio" name="send_disabled" value="0" <?php echo !$send_disabled ? 'CHECKED' : ''; ?> /> <?php echo $text_disabled; ?>
+                      </label>
+                  </div>
+                </div>
+
+                <!-- <div class="form-group">
+                  <label class="col-sm-2 control-label"><?php echo $entry_create_a_new_translation; ?></label>
+                  <div class="col-sm-10">
+                      <label class="radio-inline">
+                      <input type="radio" name="translate_one_time_only" value="1" <?php echo $translate_one_time_only ? 'CHECKED' : ''; ?> /> <?php echo $text_one_time_only; ?>
+                      </label>
+                      <label class="radio-inline">
+                      <input type="radio" name="translate_one_time_only" value="0" <?php echo !$translate_one_time_only ? 'CHECKED' : ''; ?> /> <?php echo $text_on_each_update; ?>
+                      </label>
+                  </div>
+                </div> -->
+
+              <fieldset class="table-responsive">
+                <legend><?php echo $text_language_translations; ?></legend>
+                <table class="table table-bordered">
+                  <thead>
+                    <th><?php echo $text_system_language; ?></th>
+                    <th><span class="fa fa-question-circle cursor-pointer" data-toggle="tooltip" title="<?php echo $text_translate_status_helper; ?>"></span> <?php echo $text_translate_status; ?></th>
+                    <th><?php echo $text_translate_from; ?></th>
+                  </thead>
+                  <tbody>
+                    <?php foreach ($languages as $language) { ?>
+                    <tr>
+                      <td><?php echo $language['name']; ?></td>
                       <td>
                         <div class="la-<?php echo $language['language_id']; ?>">
                           <label class="radio-inline">
@@ -200,6 +241,7 @@
                   </div>
                   <?php } ?>
                 </div>
+                <?php echo $text_other_translations; ?><br/><br/>
               </fieldset>
               <fieldset>
                 <legend><?php echo $text_translate_feeds; ?></legend>
@@ -207,12 +249,112 @@
                   <?php foreach ($feeds as $feed) { ?><?php echo $feed; ?><br><?php } ?>
                 </div>
               </fieldset>
-              <fieldset>
-                <legend><?php echo $text_translation_callback; ?></legend>
-                <div class="well well-sm">
-                  <?php echo $translate_callback; ?>
+            </div>
+            <div class="tab-pane" id="tab-description-generator">
+              <div class="alert alert-warning">
+                <?php echo $text_description_generator_info; ?>
+              </div>
+              <div class="form-group">
+                <label class="col-sm-2 control-label" for="description-status"><?php echo $entry_status; ?></label>
+                <div class="col-sm-10">
+                  <select name="description_status" id="description-status" class="form-control">
+                    <?php if ($description_status) { ?>
+                    <option value="1" selected="selected"><?php echo $text_enabled; ?></option>
+                    <option value="0"><?php echo $text_disabled; ?></option>
+                    <?php } else { ?>
+                    <option value="1"><?php echo $text_enabled; ?></option>
+                    <option value="0" selected="selected"><?php echo $text_disabled; ?></option>
+                    <?php } ?>
+                  </select>
                 </div>
-                <?php echo $text_translation_callback_helper; ?>
+              </div>
+              <!-- <div class="form-group">
+                <label class="col-sm-2 control-label" for="input-live-description"><span data-toggle="tooltip" title="<?php echo $help_live_description; ?>"><?php echo $entry_live_description; ?></span></label>
+                <div class="col-sm-10">
+                    <label class="radio-inline">
+                    <input type="radio" name="live_description" value="1" <?php echo $live_description ? 'CHECKED' : ''; ?> /> <?php echo $text_enabled; ?>
+                    </label>
+                    <label class="radio-inline">
+                    <input type="radio" name="live_description" value="0" <?php echo !$live_description ? 'CHECKED' : ''; ?> /> <?php echo $text_disabled; ?>
+                    </label>
+                </div>
+              </div> -->
+              <div class="form-group">
+                <label class="col-sm-2 control-label"><?php echo $entry_generate_product_description; ?></label>
+                <div class="col-sm-10">
+                    <label class="radio-inline">
+                    <input type="radio" name="generate_product_description" value="1" <?php echo $generate_product_description ? 'CHECKED' : ''; ?> /> <?php echo $text_enabled; ?>
+                    </label>
+                    <label class="radio-inline">
+                    <input type="radio" name="generate_product_description" value="0" <?php echo !$generate_product_description ? 'CHECKED' : ''; ?> /> <?php echo $text_disabled; ?>
+                    </label>
+                </div>
+              </div>
+              <div class="form-group">
+                <label class="col-sm-2 control-label" for="product-description-length"><?php echo $entry_minimum_description_length_product; ?></label>
+                <div class="col-sm-10">
+                  <input type="text" name="minimum_product_descrition" id="product-description-length" class="form-control" value="<?php echo $minimum_product_descrition; ?>">
+                </div>
+              </div>
+              <div class="form-group">
+                <label class="col-sm-2 control-label"><?php echo $entry_send_stock_0; ?></label>
+                <div class="col-sm-10">
+                    <label class="radio-inline">
+                    <input type="radio" name="description_send_stock_0" value="1" <?php echo $description_send_stock_0 ? 'CHECKED' : ''; ?> /> <?php echo $text_enabled; ?>
+                    </label>
+                    <label class="radio-inline">
+                    <input type="radio" name="description_send_stock_0" value="0" <?php echo !$description_send_stock_0 ? 'CHECKED' : ''; ?> /> <?php echo $text_disabled; ?>
+                    </label>
+                </div>
+              </div>
+              <div class="form-group">
+                <label class="col-sm-2 control-label"><?php echo $entry_generate_category_description; ?></label>
+                <div class="col-sm-10">
+                    <label class="radio-inline">
+                    <input type="radio" name="generate_category_description" value="1" <?php echo $generate_category_description ? 'CHECKED' : ''; ?> /> <?php echo $text_enabled; ?>
+                    </label>
+                    <label class="radio-inline">
+                    <input type="radio" name="generate_category_description" value="0" <?php echo !$generate_category_description ? 'CHECKED' : ''; ?> /> <?php echo $text_disabled; ?>
+                    </label>
+                </div>
+              </div>
+              <div class="form-group">
+                <label class="col-sm-2 control-label" for="category-description-length"><?php echo $entry_minimum_description_length_category; ?></label>
+                <div class="col-sm-10">
+                  <input type="text" name="minimum_category_descrition" id="category-description-length" class="form-control" value="<?php echo $minimum_category_descrition; ?>">
+                </div>
+              </div>
+              <div class="form-group">
+                <label class="col-sm-2 control-label"><?php echo $entry_send_disabled; ?></label>
+                <div class="col-sm-10">
+                    <label class="radio-inline">
+                    <input type="radio" name="description_send_disabled" value="1" <?php echo $description_send_disabled ? 'CHECKED' : ''; ?> /> <?php echo $text_enabled; ?>
+                    </label>
+                    <label class="radio-inline">
+                    <input type="radio" name="description_send_disabled" value="0" <?php echo !$description_send_disabled ? 'CHECKED' : ''; ?> /> <?php echo $text_disabled; ?>
+                    </label>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="col-sm-2 control-label"><?php echo $entry_create_a_new_description; ?></label>
+                <div class="col-sm-10">
+                    <label class="radio-inline">
+                    <input type="radio" name="create_description_one_time_only" value="1" <?php echo $create_description_one_time_only ? 'CHECKED' : ''; ?> /> <?php echo $text_one_time_only; ?>
+                    </label>
+                    <label class="radio-inline">
+                    <input type="radio" name="create_description_one_time_only" value="0" <?php echo !$create_description_one_time_only ? 'CHECKED' : ''; ?> /> <?php echo $text_on_each_update; ?>
+                    </label>
+                </div>
+              </div>
+
+
+              <fieldset>
+                <legend><?php echo $text_description_cronjob; ?></legend>
+                <div class="well well-sm">
+                  <?php echo $description_cronjob; ?>
+                </div>
+                <?php echo $text_description_cronjob_callback_helper; ?>
               </fieldset>
             </div>
           </div>
