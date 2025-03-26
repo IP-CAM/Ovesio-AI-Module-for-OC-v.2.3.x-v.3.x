@@ -36,11 +36,6 @@ class ControllerExtensionModuleOvesioCronjob extends Controller
         $language = $languages[$from_language_id]['code'];
 
         $list = $this->model->getCronList($language);
-        // [resource] => category
-        // [resource_id] => 424
-        // [list_id] => 116
-        // [expired_description] => 0
-        // [expired_translation] => 0
 
         if(!empty($list))
         {
@@ -57,8 +52,6 @@ class ControllerExtensionModuleOvesioCronjob extends Controller
 
             echo "Entries found: " . count($list);
         }
-
-pre($list);
     }
 
     /**
