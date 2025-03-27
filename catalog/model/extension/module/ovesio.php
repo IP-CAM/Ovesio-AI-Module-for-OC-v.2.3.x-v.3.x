@@ -401,7 +401,7 @@ class ModelExtensionModuleOvesio extends Model
                 ( ol.generate_description_id IS NOT NULL AND ol.generate_description_status = 0 AND ol.generate_description_date < NOW() - INTERVAL 24 HOUR ) OR
                 ( ol.translate_id IS NOT NULL AND ol.translate_status = 0 AND ol.translate_date < NOW() - INTERVAL 24 HOUR )
             )
-        LIMIT 40";
+        LIMIT 50";
 
         $query = $this->db->query($sql);
 

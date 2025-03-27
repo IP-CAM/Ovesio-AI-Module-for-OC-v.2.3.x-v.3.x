@@ -70,7 +70,7 @@ From the **AI Description Generator** tab:
   ```
 - The cron job:
   - Runs every 5 minutes
-  - Processes up to **40 entries per execution**
+  - Processes up to **50 entries per execution**
   - Triggers both translation and description generation
 - The cron URL and hash are available in the **General** tab
 
