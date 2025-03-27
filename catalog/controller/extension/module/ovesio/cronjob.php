@@ -41,7 +41,7 @@ class ControllerExtensionModuleOvesioCronjob extends Controller
         {
             foreach($list as $entry) {
                 if($entry['expired_description'] || $entry['expired_translation']) {
-                    $type = $entry['expired_description'] ? 'description' : 'translation';
+                    $type = $entry['expired_description'] ? 'description' : 'translate';
                     $this->model->updateExpired($entry['list_id'], $type);
                 }
 
@@ -49,9 +49,9 @@ class ControllerExtensionModuleOvesioCronjob extends Controller
             }
 
             $this->ovesio->sendData();
-
-            echo "Entries found: " . count($list);
         }
+
+        echo "Entries found: " . count($list);
     }
 
     /**

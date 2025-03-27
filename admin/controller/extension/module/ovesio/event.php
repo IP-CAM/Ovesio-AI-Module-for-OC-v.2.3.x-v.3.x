@@ -42,7 +42,9 @@ class ControllerExtensionModuleOvesioEvent extends Controller
             $this->ovesio->{$resource}($resource_id);
             $this->ovesio->sendData();
         } catch(Throwable $e) {
-            dd($e);
+            echo "Ovesio Error";
+            echo "<pre>{$e}</pre>";
+            exit();
         }
     }
 }
