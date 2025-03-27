@@ -316,7 +316,6 @@ class Ovesio
             $category_ids,
             $this->config->get($this->module_key . '_description_send_disabled')
         );
-
         if(empty($categories)){
             // maybe needs to be translated
             $this->add('translate', 'category', $category_ids);
@@ -386,7 +385,6 @@ class Ovesio
             $this->config->get($this->module_key . '_description_send_disabled'),
             $this->config->get($this->module_key . '_description_send_stock_0')
         );
-
         if(empty($products)){
             // maybe needs to be translated
             $this->add('translate', 'product', $product_ids);
@@ -475,11 +473,14 @@ class Ovesio
     protected function translate_category($category_ids)
     {
         $translate_fields = (array)$this->config->get($this->module_key . '_translate_fields');
+        if(empty($translate_fields)){
+            return;
+        }
+
         $categories = $this->model->getCategories(
             $category_ids,
             $this->config->get($this->module_key . '_send_disabled')
         );
-
         if(empty($categories)){
             return;
         }
@@ -512,12 +513,15 @@ class Ovesio
     protected function translate_product($product_ids)
     {
         $translate_fields = (array)$this->config->get($this->module_key . '_translate_fields');
+        if(empty($translate_fields)){
+            return;
+        }
+
         $products = $this->model->getProducts(
             $product_ids,
             $this->config->get($this->module_key . '_send_disabled'),
             $this->config->get($this->module_key . '_send_stock_0')
         );
-
         if(empty($products)){
             return;
         }
@@ -569,7 +573,6 @@ class Ovesio
     protected function translate_attribute($attribute_ids)
     {
         $attribute_groups = $this->model->getAttributeGroups();
-
         if(empty($attribute_groups)){
             return;
         }
@@ -617,7 +620,6 @@ class Ovesio
     {
         $attribute_groups = $this->model->getAttributeGroups($attribute_group_ids);
         $attribute_groups = array_column($attribute_groups, null, 'attribute_group_id');
-
         if(empty($attribute_groups)){
             return;
         }
@@ -660,7 +662,6 @@ class Ovesio
     protected function translate_option($option_ids)
     {
         $options = $this->model->getOptions($option_ids);
-
         if(empty($options)){
             return;
         }
