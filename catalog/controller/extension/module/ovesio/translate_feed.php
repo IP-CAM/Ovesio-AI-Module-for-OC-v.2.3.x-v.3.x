@@ -70,6 +70,8 @@ class ControllerExtensionModuleOvesioTranslateFeed extends Controller
             }
         }
 
+        //TODO: Feed should be created based on list table !!!
+
         // call the feed
         $type = $this->request->get['type'] ?? null;
         if (!empty($type) && method_exists($this, $type)) {
