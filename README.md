@@ -9,7 +9,7 @@ For production-ready integrations, we highly recommend using our official API en
 ---
 
 ## Overview
-The Ovesio AI Module integrates OpenCart with [Ovesio.com](https://ovesio.com), enabling AI-powered translations and automatic content generation (descriptions) for your e-commerce store.
+The Ovesio AI Module integrates OpenCart with [Ovesio.com](https://ovesio.com), enabling AI-powered translations and automatic content generation (descriptions and SEO meta tags) for your e-commerce store.
 
 ---
 
@@ -17,6 +17,9 @@ The Ovesio AI Module integrates OpenCart with [Ovesio.com](https://ovesio.com), 
 
 ### Compatibility
 - Fully compatible with OpenCart **2.3 - 3.x**
+- Also compatible with SEO enhancement extensions such as:
+  - **Complete SEO**
+  - **SEO Mega KIT PLUS**
 
 ### Translation Capabilities
 - Translations are performed **automatically in the background**
@@ -42,9 +45,20 @@ The Ovesio AI Module integrates OpenCart with [Ovesio.com](https://ovesio.com), 
   - **On each resource update**
 - Descriptions are also performed **in the background**, not instantly
 
+### SEO Meta Tag Generation
+- Fully automated generation of SEO **meta titles**, **meta descriptions**, and **meta keywords** using Ovesio AI
+- Configurable from the **AI SEO MetaTags Generator** tab
+- Available for both **products** and **categories**
+- SEO meta tag generation supports:
+  - **Out-of-stock products**
+  - **Disabled products and categories**
+- Two generation modes supported:
+  - **One time only** (meta tags are generated a single time)
+  - **On each product or category update** (meta tags are regenerated every time a resource is edited)
+
 ### AI Description Generator Options
 From the **AI Description Generator** tab:
-- Enable/disable description generation per resource type
+- Enable/disable product and category description generation
 - Set thresholds:
   - Ignore product descriptions longer than X characters
   - Ignore category descriptions longer than X characters
@@ -71,7 +85,7 @@ From the **AI Description Generator** tab:
 - The cron job:
   - Runs every 5 minutes
   - Processes up to **50 entries per execution**
-  - Triggers both translation and description generation
+  - Triggers translations, description and meta tag generation
 - The cron URL and hash are available in the **General** tab
 
 ---
@@ -97,9 +111,20 @@ From the **AI Description Generator** tab:
 
 #### AI Description Generator Tab
 - Enable/disable product and category description generation
-- Set character thresholds
+- Set character thresholds for descriptions
 - Include/exclude out-of-stock or disabled entries
-- Choose generation frequency
+- Choose generation frequency:
+  - One time only
+  - On each update
+
+#### AI SEO MetaTags Generator Tab
+- Enable/disable SEO meta tag generation for products and categories
+- Choose whether to include:
+  - Out-of-stock products
+  - Disabled products and categories
+- Choose generation frequency:
+  - One time only
+  - On each update
 
 #### Translate Settings Tab
 - Enable/disable translation features
@@ -112,9 +137,8 @@ From the **AI Description Generator** tab:
 
 ## Usage Summary
 
-- Descriptions and translations are executed asynchronously in the background
+- Descriptions, meta tags, and translations are executed asynchronously in the background but can also be can be triggered once or on every update, based on configuration
 - Translations are processed once unless content is modified
-- Description generation frequency depends on user configuration (one-time or on every update)
 - Use feeds for large catalogs and ensure cron is set up for full automation
 
 ---
