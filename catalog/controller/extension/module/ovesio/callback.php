@@ -81,6 +81,10 @@ class ControllerExtensionModuleOvesioCallback extends Controller
                 break;
         }
 
+        if (empty($type)) {
+            throw new Exception('Data received has empty type');
+        }
+
         if(in_array($resource, ['product', 'category', 'attribute_group', 'option']) && !$status) {
             return $this->setOutput(['error' => 'This operation is disabled!']);
         }
@@ -117,7 +121,6 @@ class ControllerExtensionModuleOvesioCallback extends Controller
         $this->{$method}($identifier, $data);
 
         // Update log table
-        $type = !$is_description ? 'translate' : 'generate_description';
         list($resource, $resource_id) = explode('/', $data['ref']);
 
         $this->model->addList([
@@ -256,11 +259,12 @@ class ControllerExtensionModuleOvesioCallback extends Controller
         //seo_h1, seo_h2, seo_h3, meta_title, meta_description, meta_keywords
 
         $language_id = $data['language_id'];
-        $data = $this->model->getProductForSeo($product_id, $language_id);
+        $seo = $this->model->getProductForSeo($product_id, $language_id);
+        $content = $this->populate_compatibility_content($data['content']);
 
         $metatags = [];
-        foreach ($data['content'] as $key => $value) {
-            if(isset($data['product_description'][$language_id][$key])) {
+        foreach ($content as $key => $value) {
+            if(isset($seo['product_description'][$language_id][$key])) {
                 $metatags[$key] = $value;
             }
         }
@@ -273,16 +277,36 @@ class ControllerExtensionModuleOvesioCallback extends Controller
         //seo_h1, seo_h2, seo_h3, meta_title, meta_description, meta_keywords
 
         $language_id = $data['language_id'];
-        $data = $this->model->getCategoryForSeo($category_id, $language_id);
+        $seo = $this->model->getCategoryForSeo($category_id, $language_id);
+        $content = $this->populate_compatibility_content($data['content']);
 
         $metatags = [];
-        foreach ($data['content'] as $key => $value) {
-            if(isset($data['category_description'][$language_id][$key])) {
+        foreach ($content as $key => $value) {
+            if(isset($seo['category_description'][$language_id][$key])) {
                 $metatags[$key] = $value;
             }
         }
 
         $this->model->updateCategoryDescription($category_id, $language_id, $metatags);
+    }
+
+    protected function populate_compatibility_content($content)
+    {
+        // General Mappings
+        $content['meta_keyword'] = $content['meta_keywords'];
+
+        // Complete SEO module mappings
+        $content['image_title'] = $content['seo_h1'];
+        $content['image_alt'] = $content['seo_h2'];
+        $content['seo_keyword'] = $content['meta_keywords'];
+
+        // SEO Mega KIT PLUS mappings
+        //$content['meta_title_ag'] = $data['meta_title'];
+        $content['smp_h1_title'] = $content['seo_h1'];
+        $content['smp_alt_images'] = $content['seo_h1'];
+        $content['smp_title_images'] = $content['seo_h2'];
+
+        return $content;
     }
 
     /**
