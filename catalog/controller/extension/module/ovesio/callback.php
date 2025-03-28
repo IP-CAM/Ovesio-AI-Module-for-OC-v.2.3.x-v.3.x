@@ -123,7 +123,7 @@ class ControllerExtensionModuleOvesioCallback extends Controller
             $filed_type . '_status' => 1,
         ]);
 
-        //if is description, send to translate
+        // move to next event!
         if($filed_type == 'generate_description') {
             $this->load->library('ovesio');
 

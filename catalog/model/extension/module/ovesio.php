@@ -278,13 +278,13 @@ class ModelExtensionModuleOvesio extends Model
         return $data;
     }
 
-    public function hasDescription(string $resource, array $resource_ids)
+    public function getHashList(string $resource, array $resource_ids, string $lang, string $type)
     {
-        $query = $this->db->query("SELECT resource_id, generate_description_hash FROM " . DB_PREFIX . "ovesio_list WHERE `resource` = '" . $resource . "' AND `resource_id` IN (" . implode(',', $resource_ids) . ") AND generate_description_id >= 0 GROUP BY resource_id");
+        $query = $this->db->query("SELECT resource_id, {$type}_hash FROM " . DB_PREFIX . "ovesio_list WHERE `resource` = '" . $resource . "' AND `resource_id` IN (" . implode(',', $resource_ids) . ") AND lang = '" . $lang . "' AND {$type}_id >= 0 GROUP BY resource_id");
 
         $status = array_fill_keys($resource_ids, null);
         foreach($query->rows as $row) {
-            $status[$row['resource_id']] = $row['generate_description_hash'];
+            $status[$row['resource_id']] = $row[$type . '_hash'];
         }
 
         return $status;
@@ -301,16 +301,22 @@ class ModelExtensionModuleOvesio extends Model
             $where_sql[] = "`" . $key . "` = '" . $this->db->escape($value) . "'";
         }
 
+        $where_hash_not_null = "";
         $fields_sql = [];
         foreach ($data as $key => $value) {
-            $fields_sql[] = "`" . $key . "` = '" . $this->db->escape($value) . "'";
+            if(is_null($value) && strstr($key, '_hash'))
+            {
+                $where_hash_not_null = "AND `" . $key . "` IS NULL";
+            } else {
+                $fields_sql[] = "`" . $key . "` = '" . $this->db->escape($value) . "'";
+            }
         }
 
         // check if exists first
         $query = $this->db->query("SELECT id FROM " . DB_PREFIX . "ovesio_list WHERE " . implode(' AND ', $where_sql));
 
         if ($query->row) {
-            $this->db->query("UPDATE " . DB_PREFIX . "ovesio_list SET " . implode(', ', $fields_sql) . " WHERE id = " . (int) $query->row['id']);
+            $this->db->query("UPDATE " . DB_PREFIX . "ovesio_list SET " . implode(', ', $fields_sql) . " WHERE id = " . (int) $query->row['id'] . " {$where_hash_not_null}");
 
             return $query->row['id'];
         } else {
@@ -349,30 +355,37 @@ class ModelExtensionModuleOvesio extends Model
 		return $query->row;
 	}
 
-    public function getCronList($language)
+    public function getCronList($language, $module_key)
     {
+        $description_status = (int) $this->config->get($module_key . '_description_status');
+        $translation_status = (int) $this->config->get($module_key . '_translation_status');
+
         $pwhere = '';
-        if (!$this->config->get($this->module_key . '_description_send_disabled')) {
+        if (!$this->config->get($module_key . '_description_send_disabled')) {
 			$pwhere .= " AND p.quantity > '0'";
 		}
 
-        if (!$this->config->get($this->module_key . '_description_send_stock_0')) {
+        if (!$this->config->get($module_key . '_description_send_stock_0')) {
             $pwhere .= " AND p.status != 0";
         }
 
         $cwhere = '';
-        if (!$this->config->get($this->module_key . '_send_disabled')) {
+        if (!$this->config->get($module_key . '_send_disabled')) {
             $cwhere .= " AND c.status != 0";
         }
 
-        $sql = " SELECT
+        $sql = "SELECT
                 r.`resource`,
                 r.resource_id,
                 ol.id as list_id,
                 ( ol.generate_description_id IS NOT NULL AND ol.generate_description_status = 0 AND ol.generate_description_date < NOW() - INTERVAL 24 HOUR ) AS expired_description,
                 ( ol.translate_id IS NOT NULL AND ol.translate_status = 0 AND ol.translate_date < NOW() - INTERVAL 24 HOUR ) AS expired_translation
-            FROM (
-                SELECT 'attribute_group' as resource, a.attribute_group_id AS resource_id
+            FROM (";
+
+        //Only if translation is enabled
+        if($translation_status)
+        {
+            $sql .= "SELECT 'attribute_group' as resource, a.attribute_group_id AS resource_id
                 FROM " . DB_PREFIX . "attribute_description as ad
                 JOIN " . DB_PREFIX . "attribute as a ON a.attribute_id = ad.attribute_id
                 WHERE ad.language_id = {$this->from_language_id}
@@ -381,8 +394,10 @@ class ModelExtensionModuleOvesio extends Model
                 FROM " . DB_PREFIX . "option_description as od
                 JOIN " . DB_PREFIX . "option as o ON o.option_id = od.option_id
                 WHERE od.language_id = {$this->from_language_id}
-            UNION
-                SELECT 'category' as resource, cd.category_id as resource_id
+            UNION";
+        }
+
+        $sql .= "SELECT 'category' as resource, cd.category_id as resource_id
                 FROM " . DB_PREFIX . "category_description as cd
                 JOIN " . DB_PREFIX . "category as c ON c.category_id = cd.category_id
                 WHERE cd.language_id = {$this->from_language_id} {$cwhere}
@@ -392,16 +407,30 @@ class ModelExtensionModuleOvesio extends Model
                 JOIN " . DB_PREFIX . "product_description as pd ON p.product_id = pd.product_id
                 where pd.language_id = {$this->from_language_id} {$pwhere}
         ) as r
-        LEFT JOIN " . DB_PREFIX . "ovesio_list as ol ON ol.resource = r.resource AND ol.resource_id = r.resource_id
+        LEFT JOIN " . DB_PREFIX . "ovesio_list as ol ON ol.resource = r.resource AND ol.resource_id = r.resource_id AND ol.lang = '{$language}'
         WHERE
-            (ol.id IS NULL OR ol.lang = '{$language}') AND
-            (
-                ( ol.generate_description_id IS NULL AND ol.`resource` IN ('product', 'category')) OR
-                ol.translate_id IS NULL OR
-                ( ol.generate_description_id IS NOT NULL AND ol.generate_description_status = 0 AND ol.generate_description_date < NOW() - INTERVAL 24 HOUR ) OR
-                ( ol.translate_id IS NOT NULL AND ol.translate_status = 0 AND ol.translate_date < NOW() - INTERVAL 24 HOUR )
-            )
-        LIMIT 50";
+            ol.id IS NULL OR";
+
+        $where_sql = [];
+        if($description_status)
+        {
+            $where_sql[] = "( ol.generate_description_id IS NULL AND ol.`resource` IN ('product', 'category') ) OR
+            ( ol.generate_description_id IS NOT NULL AND ol.generate_description_status = 0 AND ol.generate_description_date < NOW() - INTERVAL 24 HOUR )";
+        }
+
+        if($translation_status)
+        {
+            $where_sql[] = "( ol.translate_id IS NULL ) OR
+            ( ol.translate_id IS NOT NULL AND ol.translate_status = 0 AND ol.translate_date < NOW() - INTERVAL 24 HOUR )";
+        }
+
+        if(empty($where_sql)){
+            return [];
+        }
+
+        $sql .= implode(' OR ', $where_sql);
+
+        $sql .= " LIMIT 50";
 
         $query = $this->db->query($sql);
 

@@ -33,4 +33,10 @@ class ModelExtensionModuleOvesio extends Model
         )
         COLLATE='utf8mb4_general_ci' ENGINE=InnoDB;");
     }
+
+    public function deleteIgnoredList()
+    {
+        $this->db->query("UPDATE `" . DB_PREFIX . "ovesio_list` SET generate_description_id = NULL WHERE generate_description_id = 0 AND generate_description_hash IS NULL");
+        $this->db->query("UPDATE `" . DB_PREFIX . "ovesio_list` SET translate_id = NULL WHERE translate_id = 0 AND translate_hash IS NULL");
+    }
 }

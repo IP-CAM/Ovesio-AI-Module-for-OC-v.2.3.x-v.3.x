@@ -8,6 +8,7 @@ class Ovesio
     private $model;
     private $config_language_id;
     private $module_key = 'ovesio';
+    private $debug = [];
 
     private $request_data = [];
     private $data = [];
@@ -63,39 +64,52 @@ class Ovesio
 
         while(count($this->data)) {
             foreach($this->data as $event_type => $operations) {
-                foreach($operations as $type => $ids) {
-                    $ids = array_filter($ids);
-                    if($ids) {
+                foreach($operations as $resource => $resource_ids) {
+                    $resource_ids = array_filter($resource_ids);
+                    if($resource_ids) {
                         //reset data
                         $this->request_data = [];
 
-
+                        $message = null;
                         if($event_type == 'generate_description') {
+
                             $status = $this->config->get($this->module_key . '_description_status');
+
+                            //Check other status types
+                            if(in_array($resource, ['product', 'category'])) {
+                                $status = $this->config->get($this->module_key . '_generate_' . $resource . '_description');
+                            }
+
                         } else {
                             $status = $this->config->get($this->module_key . '_translation_status');
+
+                            //Check other status types
+                            if(in_array($resource, ['product', 'category'])) {
+                                $translate_fields = (array)$this->config->get($this->module_key . '_translate_fields');
+                                if(empty($translate_fields[$resource])){
+                                    $status = 0;
+                                }
+                            }
                         }
 
                         if(!$status) {
-                            if($event_type == 'generate_description') {
-                                $this->add('translate', $type, $ids);
-                            }
+                            $this->ignoreMoveOnNextEvent($resource, $resource_ids, $event_type, "Status disabled");
 
                             //reset while
-                            $this->cleanData($event_type, $type);
+                            $this->cleanData($event_type, $resource);
 
                             continue;
                         }
 
                         //prepare new data per type
-                        $this->{$event_type . '_' . $type}($ids);
+                        $this->{$event_type . '_' . $resource}($resource_ids);
 
                         //send request type
                         $this->sendRequest($event_type);
                     }
 
                     //reset while
-                    $this->cleanData($event_type, $type);
+                    $this->cleanData($event_type, $resource);
                 }
             }
         }
@@ -136,17 +150,37 @@ class Ovesio
     /**
      * Add event data
      *
-     * @param string $type | translate
+     * @param string $resource | translate
      * @param string $key | product, category, attribute, option
      * @param int $id
      * @return void
      */
-    public function add($type, $key, $id)
+    public function add($resource, $key, $id)
     {
         foreach ((array)$id as $id) {
-            $this->data[$type][$key][$id] = $id;
-            $this->priorities[$type] = $this->priority[$type];
+            $this->data[$resource][$key][$id] = $id;
+            $this->priorities[$resource] = $this->priority[$resource];
         }
+    }
+
+    /**
+     * Add message to debug
+     *
+     * @return void
+     */
+    public function debug($resource, $resource_id, $event_type, $message)
+    {
+        $this->debug[] = "[{$event_type}] {$resource}: " . implode(',', (array) $resource_id) . " - " . $message;
+    }
+
+    /**
+     * Show debug messages
+     *
+     * @return void
+     */
+    public function showDebug()
+    {
+        echo "<pre>" . print_r($this->debug, true) . "</pre>";
     }
 
     /**
@@ -228,6 +262,10 @@ class Ovesio
                     if($request_entry['ref'] == $entry['ref']) {
                         list($resource, $resource_id) = explode('/', $entry['ref']);
 
+                        if($event_type == 'generate_description' && !empty($request_entry['content']['description'])) {
+                            //remove description from hash to avoid recreating it everytime
+                            unset($request_entry['content']['description']);
+                        }
                         $this->model->addList([
                             'resource' => $resource,
                             'resource_id' => $resource_id,
@@ -310,16 +348,14 @@ class Ovesio
 
     protected function generate_description_category($category_ids)
     {
-        $hasDescription = $this->model->hasDescription('category', $category_ids);
+        $hashList = $this->model->getHashList('category', $category_ids, $this->catalog_lang, 'generate_description');
 
         $categories = $this->model->getCategories(
             $category_ids,
             $this->config->get($this->module_key . '_description_send_disabled')
         );
         if(empty($categories)){
-            // maybe needs to be translated
-            $this->add('translate', 'category', $category_ids);
-
+            $this->ignoreMoveOnNextEvent('category', $category_ids, 'generate_description', "Not found or disabled");
             return;
         }
 
@@ -337,31 +373,23 @@ class Ovesio
                 $push['content']['description'] = $category['description'];
             }
 
-            $hash = md5(json_encode($push));
-            if(!empty($hasDescription[$category['category_id']])) {
-                if($this->config->get($this->module_key . '_create_description_one_time_only') || $hasDescription[$category['category_id']] == $hash)
+            //remove description from hash to avoid recreating it everytime
+            $_push = $push;
+            if(!empty($_push['content']['description'])) {
+                unset($_push['content']['description']);
+            }
+            $hash = md5(json_encode($_push));
+            if(!empty($hashList[$category['category_id']])) {
+                if($this->config->get($this->module_key . '_create_description_one_time_only') || $hashList[$category['category_id']] == $hash)
                 {
-                    $this->add('translate', 'category', $category['category_id']);
+                    $this->ignoreMoveOnNextEvent('category', $category['category_id'], 'generate_description', "Description is one time only or the hash did not changed");
                     continue;
                 }
             }
 
             //The description is longer than minimum, send to translation
             if(strlen($_description) > $this->config->get($this->module_key . '_minimum_category_descrition')) {
-                $this->model->addList([
-                    'resource' => 'category',
-                    'resource_id' => $category['category_id'],
-                    'lang' => $this->catalog_lang
-                ],[
-                    'generate_description_id' => 0,
-                    'generate_description_hash' => $hash,
-                    'generate_description_date' => date('Y-m-d H:i:s'),
-                    'generate_description_status' => 1
-                ]);
-
-                // Send to translate
-                $this->add('translate', 'category', $category['category_id']);
-
+                $this->ignoreMoveOnNextEvent('category', $category['category_id'], 'generate_description', "Minimum description length not met");
                 continue;
             }
 
@@ -370,15 +398,16 @@ class Ovesio
 
         if(!empty($this->request_data['data'])) {
             $this->addDescriptionConditions();
+
+            $this->debug('category', str_replace('category/', '', array_column($this->request_data['data'], 'ref')), 'generate_description', "Prepare data");
         } else {
-            // maybe needs to be translated
-            $this->add('translate', 'category', $category_ids);
+            $this->ignoreMoveOnNextEvent('category', $category_ids, 'generate_description', "No data left to process");
         }
     }
 
     protected function generate_description_product($product_ids)
     {
-        $hasDescription = $this->model->hasDescription('product', $product_ids);
+        $hashList = $this->model->getHashList('product', $product_ids, $this->catalog_lang, 'generate_description');
 
         $products = $this->model->getProducts(
             $product_ids,
@@ -386,9 +415,7 @@ class Ovesio
             $this->config->get($this->module_key . '_description_send_stock_0')
         );
         if(empty($products)){
-            // maybe needs to be translated
-            $this->add('translate', 'product', $product_ids);
-
+            $this->ignoreMoveOnNextEvent('product', $product_ids, 'generate_description', "Not found, disabled or out of stock");
             return;
         }
 
@@ -405,6 +432,7 @@ class Ovesio
 
         $categories_ids = $this->model->getProductCategories($product_ids);
 
+        $prepare = [];
         foreach ($products as $i => $product) {
             $push = [
                 'ref' => 'product/' . $product['product_id'],
@@ -431,31 +459,23 @@ class Ovesio
                 $push['content']['additional'][] = $attributes[$attribute_id] . ': ' . $attribute_text;
             }
 
-            $hash = md5(json_encode($push));
-            if(!empty($hasDescription[$product['product_id']])) {
-                if($this->config->get($this->module_key . '_create_description_one_time_only') || $hasDescription[$product['product_id']] == $hash)
+            //remove description from hash to avoid recreating it everytime
+            $_push = $push;
+            if(!empty($_push['content']['description'])) {
+                unset($_push['content']['description']);
+            }
+            $hash = md5(json_encode($_push));
+            if(!empty($hashList[$product['product_id']])) {
+                if($this->config->get($this->module_key . '_create_description_one_time_only') || $hashList[$product['product_id']] == $hash)
                 {
-                    $this->add('translate', 'product', $product['product_id']);
+                    $this->ignoreMoveOnNextEvent('product', $product['product_id'], 'generate_description', "Description is one time only or the hash did not changed");
                     continue;
                 }
             }
 
             //The description is longer than minimum, send to translation
             if(strlen($_description) > $this->config->get($this->module_key . '_minimum_product_descrition')) {
-                $this->model->addList([
-                    'resource' => 'product',
-                    'resource_id' => $product['product_id'],
-                    'lang' => $this->catalog_lang
-                ],[
-                    'generate_description_id' => 0,
-                    'generate_description_hash' => $hash,
-                    'generate_description_date' => date('Y-m-d H:i:s'),
-                    'generate_description_status' => 1
-                ]);
-
-                // Translation update
-                $this->add('translate', 'product', $product['product_id']);
-
+                $this->ignoreMoveOnNextEvent('product', $product['product_id'], 'generate_description', "Minimum description length not met");
                 continue;
             }
 
@@ -464,24 +484,23 @@ class Ovesio
 
         if(!empty($this->request_data['data'])) {
             $this->addDescriptionConditions();
+
+            $this->debug('product', str_replace('product/', '', array_column($this->request_data['data'], 'ref')), 'generate_description', "Prepare data");
         } else {
-            // maybe needs to be translated
-            $this->add('translate', 'product', $product_ids);
+            $this->ignoreMoveOnNextEvent('product', $product_ids, 'generate_description', "No data left to process");
         }
     }
 
     protected function translate_category($category_ids)
     {
         $translate_fields = (array)$this->config->get($this->module_key . '_translate_fields');
-        if(empty($translate_fields)){
-            return;
-        }
 
         $categories = $this->model->getCategories(
             $category_ids,
             $this->config->get($this->module_key . '_send_disabled')
         );
         if(empty($categories)){
+            $this->ignoreMoveOnNextEvent('category', $category_ids, 'translate', "Not found or disabled");
             return;
         }
 
@@ -507,15 +526,16 @@ class Ovesio
 
         if(!empty($this->request_data['data'])) {
             $this->addTranslationConditions();
+
+            $this->debug('category', str_replace('category/', '', array_column($this->request_data['data'], 'ref')), 'translate', "Prepare data");
+        } else {
+            $this->ignoreMoveOnNextEvent('category', $category_ids, 'translate', "No data left to process");
         }
     }
 
     protected function translate_product($product_ids)
     {
         $translate_fields = (array)$this->config->get($this->module_key . '_translate_fields');
-        if(empty($translate_fields)){
-            return;
-        }
 
         $products = $this->model->getProducts(
             $product_ids,
@@ -523,6 +543,7 @@ class Ovesio
             $this->config->get($this->module_key . '_send_stock_0')
         );
         if(empty($products)){
+            $this->ignoreMoveOnNextEvent('product', $product_ids, 'translate', "Not found, disabled or out of stock");
             return;
         }
 
@@ -567,6 +588,10 @@ class Ovesio
 
         if(!empty($this->request_data['data'])) {
             $this->addTranslationConditions();
+
+            $this->debug('product', str_replace('product/', '', array_column($this->request_data['data'], 'ref')), 'translate', "Prepare data");
+        } else {
+            $this->ignoreMoveOnNextEvent('product', $product_ids, 'translate', "No data left to process");
         }
     }
 
@@ -574,6 +599,7 @@ class Ovesio
     {
         $attribute_groups = $this->model->getAttributeGroups();
         if(empty($attribute_groups)){
+            $this->ignoreMoveOnNextEvent('attribute', $attribute_ids, 'translate', "No attribute groups found");
             return;
         }
 
@@ -613,6 +639,10 @@ class Ovesio
 
         if(!empty($this->request_data['data'])) {
             $this->addTranslationConditions();
+
+            $this->debug('attribute', str_replace('attribute_group/', '', array_column($this->request_data['data'], 'ref')), 'translate', "Prepare data");
+        } else {
+            $this->ignoreMoveOnNextEvent('attribute', $attribute_ids, 'translate', "No data left to process");
         }
     }
 
@@ -621,6 +651,7 @@ class Ovesio
         $attribute_groups = $this->model->getAttributeGroups($attribute_group_ids);
         $attribute_groups = array_column($attribute_groups, null, 'attribute_group_id');
         if(empty($attribute_groups)){
+            $this->ignoreMoveOnNextEvent('attribute_group', $attribute_group_ids, 'translate', "No attribute groups found");
             return;
         }
 
@@ -656,6 +687,10 @@ class Ovesio
 
         if(!empty($this->request_data['data'])) {
             $this->addTranslationConditions();
+
+            $this->debug('attribute_group', str_replace('attribute_group/', '', array_column($this->request_data['data'], 'ref')), 'translate', "Prepare data");
+        } else {
+            $this->ignoreMoveOnNextEvent('attribute_group', $attribute_group_ids, 'translate', "No data left to process");
         }
     }
 
@@ -663,6 +698,7 @@ class Ovesio
     {
         $options = $this->model->getOptions($option_ids);
         if(empty($options)){
+            $this->ignoreMoveOnNextEvent('option', $option_ids, 'translate', "No options found");
             return;
         }
 
@@ -702,12 +738,42 @@ class Ovesio
 
         if(!empty($this->request_data['data'])) {
             $this->addTranslationConditions();
+
+            $this->debug('option', str_replace('option/', '', array_column($this->request_data['data'], 'ref')), 'translate', "Prepare data");
+        } else {
+            $this->ignoreMoveOnNextEvent('option', $option_ids, 'translate', "No data left to process");
         }
     }
 
-    private function cleanData($event_type, $type)
+    protected function ignoreMoveOnNextEvent($resource, $resource_ids, $event_type, $message = null)
     {
-        unset($this->data[$event_type][$type]);
+        foreach((array)$resource_ids as $resource_id)
+        {
+            $this->model->addList([
+                'resource' => $resource,
+                'resource_id' => $resource_id,
+                'lang' => $this->catalog_lang
+            ],[
+                $event_type . '_id' => 0,
+                $event_type . '_hash' => null, //should not contain hash because on the next update we need to make sure the same conditions are applied
+                $event_type . '_date' => date('Y-m-d H:i:s'),
+                $event_type . '_status' => 1
+            ]);
+
+            if($event_type == 'generate_description') {
+                // Send to translate
+                $this->add('translate', $resource, $resource_id);
+            }
+        }
+
+        if($message) {
+            $this->debug($resource, $resource_ids, $event_type, $message);
+        }
+    }
+
+    private function cleanData($event_type, $resource)
+    {
+        unset($this->data[$event_type][$resource]);
         if(!count($this->data[$event_type])) {
             unset($this->data[$event_type]);
         }

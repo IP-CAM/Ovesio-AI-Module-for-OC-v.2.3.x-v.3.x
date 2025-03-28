@@ -30,12 +30,19 @@ class ControllerExtensionModuleOvesioCronjob extends Controller
             return $this->setOutput(['error' => 'Module is disabled']);
         }
 
+        $status = (int) $this->config->get($this->module_key . '_description_status');
+        $status = $status + (int) $this->config->get($this->module_key . '_translation_status');
+
+        if($status == 0) {
+            return $this->setOutput(['error' => 'All operations are disabled']);
+        }
+
         $from_language_id = $this->config->get($this->module_key . '_catalog_language_id');
 
         $languages = $this->config->get($this->module_key . '_language_match');
         $language = $languages[$from_language_id]['code'];
 
-        $list = $this->model->getCronList($language);
+        $list = $this->model->getCronList($language, $this->module_key);
 
         if(!empty($list))
         {
@@ -50,6 +57,8 @@ class ControllerExtensionModuleOvesioCronjob extends Controller
 
             $this->ovesio->sendData();
         }
+
+        $this->ovesio->showDebug();
 
         echo "Entries found: " . count($list);
     }

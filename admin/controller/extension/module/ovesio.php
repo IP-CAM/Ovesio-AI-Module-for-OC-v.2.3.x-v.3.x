@@ -3,7 +3,7 @@
  * Name: Ovesio
  * Url: https://ovesio.com/
  * Author: Aweb Design SRL
- * Version: 1.2
+ * Version: 1.3
  */
 
 class ControllerExtensionModuleOvesio extends Controller
@@ -180,6 +180,10 @@ class ControllerExtensionModuleOvesio extends Controller
 			$this->model_setting_setting->editSetting($this->module_key, $post);
 
             // $this->liveTranslate($this->request->post['live_translate']);
+
+            // delete all ignored events in order to be rechecked is matches the new rules
+            $this->load->model('extension/module/ovesio');
+            $this->model_extension_module_ovesio->deleteIgnoredList();
 
 			$this->session->data['success'] = $this->language->get('text_success');
 
