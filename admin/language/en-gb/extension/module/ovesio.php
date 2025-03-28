@@ -34,6 +34,7 @@ $_['text_cronjob'] = 'Cronjob';
 $_['text_cronjob_helper'] = '* Each time the cron runs, it will process only 40 resources at a time.';
 $_['text_description_generator_info'] = 'Changing the options in this section may affect translations already made with Ovesio. If you re-generate descriptions for products or categories that have already been translated, they will need to be translated again.';
 $_['text_translate_after_description_generator_info'] = 'Since you have enabled automatic description generation, resource translation will occur after the description is generated, according to the settings you chose.';
+$_['text_metatags_generator_info'] = 'Since you have enabled automatic description generation and/or translations, metatags generator will occur after the description is generated & text translated.';
 $_['text_one_time_only'] = 'One time only';
 $_['text_on_each_update'] = 'On each resource update';
 $_['text_other_translations'] = '* product options, product attributes and product attribute groups will be translated as well.';
@@ -41,6 +42,7 @@ $_['text_other_translations'] = '* product options, product attributes and produ
 $_['tab_general'] = 'General';
 $_['tab_description_generator'] = 'AI Description Generator';
 $_['tab_language_association'] = 'Translate Settings';
+$_['tab_metatags'] = 'AI SEO MetaTags generator';
 
 // Entry
 $_['entry_status']     = 'Status';
@@ -60,6 +62,10 @@ $_['entry_minimum_description_length_product'] = 'Ignore product descriptions la
 $_['entry_minimum_description_length_category'] = 'Ignore category descriptions larger than X characters';
 $_['entry_create_a_new_description'] = 'Create a new description';
 $_['entry_create_a_new_translation'] = 'Create a new translation';
+$_['entry_metatags_product'] = 'Generate MetaTags for products';
+$_['entry_metatags_send_stock_0'] = 'Include products out of stock(quantity <= 0)';
+$_['entry_metatags_send_disabled'] = 'Include disabled products and categories';
+$_['entry_metatags_category'] = 'Generate MetaTags for categories';
 
 // Buttons
 $_['button_cancel'] = 'Cancel';

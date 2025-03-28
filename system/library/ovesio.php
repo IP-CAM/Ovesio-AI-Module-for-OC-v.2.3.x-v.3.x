@@ -14,10 +14,15 @@ class Ovesio
     private $data = [];
     private $endpoint = [
         'translate' => '/translate/request',
-        'generate_description' => '/ai/generate-description'
+        'generate_description' => '/ai/generate-description',
+        'metatags' => '/ai/generate-seo'
     ];
     private $priorities = [];
-    private $priority = ['generate_description' => 1, 'translate' => 2];
+    private $priority = [
+        'generate_description' => 1,
+        'translate' => 2,
+        'metatags' => 3
+    ];
     private $catalog_lang = null;
 
     public function __construct($registry)
@@ -70,25 +75,31 @@ class Ovesio
                         //reset data
                         $this->request_data = [];
 
-                        $message = null;
                         if($event_type == 'generate_description') {
 
                             $status = $this->config->get($this->module_key . '_description_status');
 
                             //Check other status types
-                            if(in_array($resource, ['product', 'category'])) {
+                            if($status && in_array($resource, ['product', 'category'])) {
                                 $status = $this->config->get($this->module_key . '_generate_' . $resource . '_description');
                             }
 
-                        } else {
+                        } elseif($event_type == 'translate') {
                             $status = $this->config->get($this->module_key . '_translation_status');
 
                             //Check other status types
-                            if(in_array($resource, ['product', 'category'])) {
+                            if($status && in_array($resource, ['product', 'category'])) {
                                 $translate_fields = (array)$this->config->get($this->module_key . '_translate_fields');
                                 if(empty($translate_fields[$resource])){
                                     $status = 0;
                                 }
+                            }
+                        } else {
+                            $status = $this->config->get($this->module_key . '_metatags_status');
+
+                            //Check other status types
+                            if($status && in_array($resource, ['product', 'category'])) {
+                                $status = $this->config->get($this->module_key . '_metatags_' . $resource);
                             }
                         }
 
@@ -337,7 +348,19 @@ class Ovesio
     {
         $hash = $this->config->get($this->module_key . '_hash');
         $server = defined('HTTPS_CATALOG') ? HTTPS_CATALOG : HTTPS_SERVER;
-        $this->request_data['callback_url'] = $server . 'index.php?route=extension/module/ovesio/callback&type=description&hash=' . $hash;
+        $this->request_data['callback_url'] = $server . 'index.php?route=extension/module/ovesio/callback&type=generate_description&hash=' . $hash;
+
+        $this->request_data['to'] = $this->catalog_lang;
+    }
+
+    /**
+     * Add metatags conditions
+     */
+    private function addMetatagsConditions()
+    {
+        $hash = $this->config->get($this->module_key . '_hash');
+        $server = defined('HTTPS_CATALOG') ? HTTPS_CATALOG : HTTPS_SERVER;
+        $this->request_data['callback_url'] = $server . 'index.php?route=extension/module/ovesio/callback&type=metatags&hash=' . $hash;
 
         $this->request_data['to'] = $this->catalog_lang;
     }
@@ -382,7 +405,7 @@ class Ovesio
             if(!empty($hashList[$category['category_id']])) {
                 if($this->config->get($this->module_key . '_create_description_one_time_only') || $hashList[$category['category_id']] == $hash)
                 {
-                    $this->ignoreMoveOnNextEvent('category', $category['category_id'], 'generate_description', "Description is one time only or the hash did not changed");
+                    $this->ignoreMoveOnNextEvent('category', $category['category_id'], 'generate_description', "One time only or the hash did not changed");
                     continue;
                 }
             }
@@ -432,7 +455,6 @@ class Ovesio
 
         $categories_ids = $this->model->getProductCategories($product_ids);
 
-        $prepare = [];
         foreach ($products as $i => $product) {
             $push = [
                 'ref' => 'product/' . $product['product_id'],
@@ -468,7 +490,7 @@ class Ovesio
             if(!empty($hashList[$product['product_id']])) {
                 if($this->config->get($this->module_key . '_create_description_one_time_only') || $hashList[$product['product_id']] == $hash)
                 {
-                    $this->ignoreMoveOnNextEvent('product', $product['product_id'], 'generate_description', "Description is one time only or the hash did not changed");
+                    $this->ignoreMoveOnNextEvent('product', $product['product_id'], 'generate_description', "One time only or the hash did not changed");
                     continue;
                 }
             }
@@ -745,6 +767,132 @@ class Ovesio
         }
     }
 
+    /**
+     * Protected methods
+     */
+
+    protected function metatags_category($category_ids)
+    {
+        $hashList = $this->model->getHashList('category', $category_ids, $this->catalog_lang, 'metatags');
+
+        $categories = $this->model->getCategories(
+            $category_ids,
+            $this->config->get($this->module_key . '_send_disabled')
+        );
+        if(empty($categories)){
+            $this->ignoreMoveOnNextEvent('category', $category_ids, 'metatags', "Not found or disabled");
+            return;
+        }
+
+        foreach ($categories as $i => $category) {
+            $push = [
+                'ref' => 'category/' . $category['category_id'],
+                'content' => [
+                    'name' => $category['name']
+                ]
+            ];
+
+            // only if is different from name...usual mistake
+            $_description = strip_tags($this->decode($category['description']));
+            if(strtolower(preg_replace("/[^A-Za-z0-9 ]/", '', $_description)) != strtolower(preg_replace("/[^A-Za-z0-9 ]/", '', strip_tags($this->decode($category['name']))))) {
+                $push['content']['description'] = $category['description'];
+            }
+
+            $hash = md5(json_encode($push));
+            if(!empty($hashList[$category['category_id']])) {
+                if($this->config->get($this->module_key . '_metatags_one_time_only') || $hashList[$category['category_id']] == $hash)
+                {
+                    $this->ignoreMoveOnNextEvent('category', $category['category_id'], 'metatags', "One time only or the hash did not changed");
+                    continue;
+                }
+            }
+
+            $this->request_data['data'][] = $push;
+        }
+
+        if(!empty($this->request_data['data'])) {
+            $this->addMetatagsConditions();
+
+            $this->debug('category', str_replace('category/', '', array_column($this->request_data['data'], 'ref')), 'metatags', "Prepare data");
+        } else {
+            $this->ignoreMoveOnNextEvent('category', $category_ids, 'metatags', "No data left to process");
+        }
+    }
+
+    protected function metatags_product($product_ids)
+    {
+        $hashList = $this->model->getHashList('product', $product_ids, $this->catalog_lang, 'metatags');
+
+        $products = $this->model->getProducts(
+            $product_ids,
+            $this->config->get($this->module_key . '_metatags_send_disabled'),
+            $this->config->get($this->module_key . '_metatags_send_stock_0')
+        );
+        if(empty($products)){
+            $this->ignoreMoveOnNextEvent('product', $product_ids, 'metatags', "Not found, disabled or out of stock");
+            return;
+        }
+
+        // chunk get attributes based on product_id
+        $product_attributes = $this->model->getProductsAttributes($product_ids);
+
+        $attribute_ids = [];
+        foreach($product_attributes as $attributes) {
+            $attribute_ids = array_merge($attribute_ids, array_keys($attributes));
+        }
+
+        $attributes = $this->model->getAttributes($attribute_ids);
+        $attributes = array_column($attributes, 'name', 'attribute_id');
+
+        $categories_ids = $this->model->getProductCategories($product_ids);
+
+        foreach ($products as $i => $product) {
+            $push = [
+                'ref' => 'product/' . $product['product_id'],
+                'content' => [
+                    'name' => $product['name']
+                ]
+            ];
+
+            // only if is different from name...usual mistake
+            $_description = strip_tags($this->decode($product['description']));
+            if(strtolower(preg_replace("/[^A-Za-z0-9 ]/", '', $_description)) != strtolower(preg_replace("/[^A-Za-z0-9 ]/", '', strip_tags($this->decode($product['name']))))) {
+                $push['content']['description'] = $product['description'];
+            }
+
+            foreach (($categories_ids[$product['product_id']] ?? []) as $category_id) {
+                $category_info = $this->model->getCategory($category_id);
+
+                if ($category_info) {
+                    $push['content']['categories'][] = ($category_info['path']) ? $category_info['path'] . ' &gt; ' . $category_info['name'] : $category_info['name'];
+                }
+            }
+
+            foreach (($product_attributes[$product['product_id']] ?? []) as $attribute_id => $attribute_text) {
+                $push['content']['additional'][] = $attributes[$attribute_id] . ': ' . $attribute_text;
+            }
+
+            $hash = md5(json_encode($push));
+            if(!empty($hashList[$product['product_id']])) {
+                if($this->config->get($this->module_key . '_metatags_one_time_only') || $hashList[$product['product_id']] == $hash)
+                {
+                    $this->ignoreMoveOnNextEvent('product', $product['product_id'], 'metatags', "One time only or the hash did not changed");
+                    continue;
+                }
+            }
+
+            $this->request_data['data'][] = $push;
+        }
+
+        if(!empty($this->request_data['data'])) {
+            $this->addMetatagsConditions();
+
+            $this->debug('product', str_replace('product/', '', array_column($this->request_data['data'], 'ref')), 'metatags', "Prepare data");
+        } else {
+            $this->ignoreMoveOnNextEvent('product', $product_ids, 'metatags', "No data left to process");
+        }
+    }
+
     protected function ignoreMoveOnNextEvent($resource, $resource_ids, $event_type, $message = null)
     {
         foreach((array)$resource_ids as $resource_id)
@@ -763,6 +911,9 @@ class Ovesio
             if($event_type == 'generate_description') {
                 // Send to translate
                 $this->add('translate', $resource, $resource_id);
+            } elseif($event_type == 'translate') {
+                // Send to metatags
+                $this->add('metatags', $resource, $resource_id);
             }
         }
 

@@ -64,17 +64,24 @@ class ControllerExtensionModuleOvesioCallback extends Controller
             throw new Exception('Data received has empty content');
         }
 
-        list($method, $identifier) = explode('/', $data['ref']);
+        list($resource, $identifier) = explode('/', $data['ref']);
         $language_code = $data['to'];
 
-        $is_description = !empty($this->request->get['type']) && $this->request->get['type'] == 'description';
-        if($is_description) {
-            $status = $this->config->get($this->module_key . '_description_status');
-        } else {
-            $status = $this->config->get($this->module_key . '_translation_status');
+        $status = 0;
+        $type = !empty($this->request->get['type']) ? $this->request->get['type'] : 'translate';
+        switch($type) {
+            case 'translate':
+                $status = $this->config->get($this->module_key . '_translation_status');
+                break;
+            case 'generate_description':
+                $status = $this->config->get($this->module_key . '_description_status');
+                break;
+            case 'metatags':
+                $status = $this->config->get($this->module_key . '_metatags_status');
+                break;
         }
 
-        if(in_array($method, ['product', 'category', 'attribute_group', 'option']) && !$status) {
+        if(in_array($resource, ['product', 'category', 'attribute_group', 'option']) && !$status) {
             return $this->setOutput(['error' => 'This operation is disabled!']);
         }
 
@@ -102,8 +109,7 @@ class ControllerExtensionModuleOvesioCallback extends Controller
 
         $data['language_id'] = $query->row['language_id'];
 
-        $method = $is_description ? 'generate_description_' . $method : 'translate_' . $method;
-
+        $method = $type . '_' . $resource;
         if (! method_exists($this, $method)) {
             throw new Exception('Method "' . $method . '" not found, wrong response type');
         }
@@ -111,23 +117,25 @@ class ControllerExtensionModuleOvesioCallback extends Controller
         $this->{$method}($identifier, $data);
 
         // Update log table
-        $filed_type = !$is_description ? 'translate' : 'generate_description';
+        $type = !$is_description ? 'translate' : 'generate_description';
         list($resource, $resource_id) = explode('/', $data['ref']);
 
         $this->model->addList([
             'resource' => $resource,
             'resource_id' => $resource_id,
-            'lang' => $filed_type == 'translate' ? $data['from'] : $data['to']
+            'lang' => $type == 'translate' ? $data['from'] : $data['to']
         ],[
-            $filed_type . '_id' => $data['id'],
-            $filed_type . '_status' => 1,
+            $type . '_id' => $data['id'],
+            $type . '_status' => 1,
         ]);
 
         // move to next event!
-        if($filed_type == 'generate_description') {
-            $this->load->library('ovesio');
-
+        $this->load->library('ovesio');
+        if($type == 'generate_description') {
             $this->ovesio->add('translate', $resource, $resource_id);
+            $this->ovesio->sendData();
+        } elseif($type == 'translate') {
+            $this->ovesio->add('metatags', $resource, $resource_id);
             $this->ovesio->sendData();
         }
 
@@ -241,6 +249,40 @@ class ControllerExtensionModuleOvesioCallback extends Controller
                 $this->output['warnings'][] = 'Unknown key "' . $item['key'] . '"';
             }
         }
+    }
+
+    protected function metatags_product($product_id, $data)
+    {
+        //seo_h1, seo_h2, seo_h3, meta_title, meta_description, meta_keywords
+
+        $language_id = $data['language_id'];
+        $data = $this->model->getProductForSeo($product_id, $language_id);
+
+        $metatags = [];
+        foreach ($data['content'] as $key => $value) {
+            if(isset($data['product_description'][$language_id][$key])) {
+                $metatags[$key] = $value;
+            }
+        }
+
+        $this->model->updateProductDescription($product_id, $language_id, $metatags);
+    }
+
+    protected function metatags_category($category_id, $data)
+    {
+        //seo_h1, seo_h2, seo_h3, meta_title, meta_description, meta_keywords
+
+        $language_id = $data['language_id'];
+        $data = $this->model->getCategoryForSeo($category_id, $language_id);
+
+        $metatags = [];
+        foreach ($data['content'] as $key => $value) {
+            if(isset($data['category_description'][$language_id][$key])) {
+                $metatags[$key] = $value;
+            }
+        }
+
+        $this->model->updateCategoryDescription($category_id, $language_id, $metatags);
     }
 
     /**

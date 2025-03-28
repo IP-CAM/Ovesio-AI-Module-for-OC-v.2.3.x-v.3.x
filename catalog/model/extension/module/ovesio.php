@@ -261,9 +261,6 @@ class ModelExtensionModuleOvesio extends Model
         $query = $this->db->query("SELECT * FROM `" . DB_PREFIX . "product_description` WHERE product_id = " . (int)$product_id . " AND language_id = " . (int)$language_id);
         $data['product_description'][$language_id] = $query->row ?? [];
 
-        $query = $this->db->query("SELECT * FROM `" . DB_PREFIX . "product_special` WHERE product_id = " . (int)$product_id);
-        $data['product_special'] = $query->rows;
-
         return $data;
     }
 
@@ -359,19 +356,25 @@ class ModelExtensionModuleOvesio extends Model
     {
         $description_status = (int) $this->config->get($module_key . '_description_status');
         $translation_status = (int) $this->config->get($module_key . '_translation_status');
+        $metatags_status = (int) $this->config->get($module_key . '_metatags_status');
+
+        $send_disabled = (int) $this->config->get($module_key . '_description_send_disabled');
+        $send_disabled += (int) $this->config->get($module_key . '_send_disabled');
+        $send_disabled += (int) $this->config->get($module_key . '_metatags_send_disabled');
 
         $pwhere = '';
-        if (!$this->config->get($module_key . '_description_send_disabled')) {
-			$pwhere .= " AND p.quantity > '0'";
+        $cwhere = '';
+        if ($send_disabled == 0) {
+            $pwhere .= " AND p.status = 1";
+            $cwhere .= " AND c.status = 1";
 		}
 
-        if (!$this->config->get($module_key . '_description_send_stock_0')) {
-            $pwhere .= " AND p.status != 0";
-        }
+        $include_out_of_stock = (int) $this->config->get($module_key . '_description_send_stock_0');
+        $include_out_of_stock += (int) $this->config->get($module_key . '_send_stock_0');
+        $include_out_of_stock += (int) $this->config->get($module_key . '_metatags_send_stock_0');
 
-        $cwhere = '';
-        if (!$this->config->get($module_key . '_send_disabled')) {
-            $cwhere .= " AND c.status != 0";
+        if ($include_out_of_stock  == 0) {
+            $pwhere .= " AND p.quantity > '0'";
         }
 
         $sql = "SELECT
@@ -379,7 +382,8 @@ class ModelExtensionModuleOvesio extends Model
                 r.resource_id,
                 ol.id as list_id,
                 ( ol.generate_description_id IS NOT NULL AND ol.generate_description_status = 0 AND ol.generate_description_date < NOW() - INTERVAL 24 HOUR ) AS expired_description,
-                ( ol.translate_id IS NOT NULL AND ol.translate_status = 0 AND ol.translate_date < NOW() - INTERVAL 24 HOUR ) AS expired_translation
+                ( ol.translate_id IS NOT NULL AND ol.translate_status = 0 AND ol.translate_date < NOW() - INTERVAL 24 HOUR ) AS expired_translation,
+                ( ol.metatags_id IS NOT NULL AND ol.metatags_status = 0 AND ol.metatags_date < NOW() - INTERVAL 24 HOUR ) AS expired_metatags
             FROM (";
 
         //Only if translation is enabled
@@ -422,6 +426,12 @@ class ModelExtensionModuleOvesio extends Model
         {
             $where_sql[] = "( ol.translate_id IS NULL ) OR
             ( ol.translate_id IS NOT NULL AND ol.translate_status = 0 AND ol.translate_date < NOW() - INTERVAL 24 HOUR )";
+        }
+
+        if($metatags_status)
+        {
+            $where_sql[] = "( ol.metatags_id IS NULL ) OR
+            ( ol.metatags_id IS NOT NULL AND ol.metatags_status = 0 AND ol.metatags_date < NOW() - INTERVAL 24 HOUR )";
         }
 
         if(empty($where_sql)){

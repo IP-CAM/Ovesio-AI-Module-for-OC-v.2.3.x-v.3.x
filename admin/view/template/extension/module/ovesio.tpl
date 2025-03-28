@@ -31,6 +31,7 @@
             <li class="active"><a href="#tab-general" data-toggle="tab"><?php echo $tab_general; ?></a></li>
             <li><a href="#tab-description-generator" data-toggle="tab"><?php echo $tab_description_generator; ?></a></li>
             <li><a href="#tab-language-association" data-toggle="tab"><?php echo $tab_language_association; ?></a></li>
+            <li><a href="#tab-metatags-generator" data-toggle="tab"><?php echo $tab_metatags; ?></a></li>
           </ul>
           <div class="tab-content">
             <div class="tab-pane active" id="tab-general">
@@ -334,6 +335,17 @@
                 </div>
               </div>
               <div class="form-group">
+                <label class="col-sm-2 control-label"><?php echo $entry_create_a_new_description; ?></label>
+                <div class="col-sm-10">
+                    <label class="radio-inline">
+                    <input type="radio" name="create_description_one_time_only" value="1" <?php echo $create_description_one_time_only ? 'CHECKED' : ''; ?> /> <?php echo $text_one_time_only; ?>
+                    </label>
+                    <label class="radio-inline">
+                    <input type="radio" name="create_description_one_time_only" value="0" <?php echo !$create_description_one_time_only ? 'CHECKED' : ''; ?> /> <?php echo $text_on_each_update; ?>
+                    </label>
+                </div>
+              </div>
+              <div class="form-group">
                 <label class="col-sm-2 control-label"><?php echo $entry_send_disabled; ?></label>
                 <div class="col-sm-10">
                     <label class="radio-inline">
@@ -344,15 +356,79 @@
                     </label>
                 </div>
               </div>
-
+            </div>
+            <div class="tab-pane" id="tab-metatags-generator">
+              <?php if($text_metatags_generator_info) { ?>
+              <div class="alert alert-info">
+                <?php echo $text_metatags_generator_info; ?>
+              </div>
+              <?php } ?>
               <div class="form-group">
-                <label class="col-sm-2 control-label"><?php echo $entry_create_a_new_description; ?></label>
+                <label class="col-sm-2 control-label" for="metatags-status"><?php echo $entry_status; ?></label>
+                <div class="col-sm-10">
+                  <select name="metatags_status" id="metatags-status" class="form-control">
+                    <?php if ($metatags_status) { ?>
+                    <option value="1" selected="selected"><?php echo $text_enabled; ?></option>
+                    <option value="0"><?php echo $text_disabled; ?></option>
+                    <?php } else { ?>
+                    <option value="1"><?php echo $text_enabled; ?></option>
+                    <option value="0" selected="selected"><?php echo $text_disabled; ?></option>
+                    <?php } ?>
+                  </select>
+                </div>
+              </div>
+              <div class="form-group">
+                <label class="col-sm-2 control-label"><?php echo $entry_metatags_product; ?></label>
                 <div class="col-sm-10">
                     <label class="radio-inline">
-                    <input type="radio" name="create_description_one_time_only" value="1" <?php echo $create_description_one_time_only ? 'CHECKED' : ''; ?> /> <?php echo $text_one_time_only; ?>
+                    <input type="radio" name="metatags_product" value="1" <?php echo $metatags_product ? 'CHECKED' : ''; ?> /> <?php echo $text_enabled; ?>
                     </label>
                     <label class="radio-inline">
-                    <input type="radio" name="create_description_one_time_only" value="0" <?php echo !$create_description_one_time_only ? 'CHECKED' : ''; ?> /> <?php echo $text_on_each_update; ?>
+                    <input type="radio" name="metatags_product" value="0" <?php echo !$metatags_product ? 'CHECKED' : ''; ?> /> <?php echo $text_disabled; ?>
+                    </label>
+                </div>
+              </div>
+              <div class="form-group">
+                <label class="col-sm-2 control-label"><?php echo $entry_metatags_send_stock_0; ?></label>
+                <div class="col-sm-10">
+                    <label class="radio-inline">
+                    <input type="radio" name="metatags_send_stock_0" value="1" <?php echo $metatags_send_stock_0 ? 'CHECKED' : ''; ?> /> <?php echo $text_enabled; ?>
+                    </label>
+                    <label class="radio-inline">
+                    <input type="radio" name="metatags_send_stock_0" value="0" <?php echo !$metatags_send_stock_0 ? 'CHECKED' : ''; ?> /> <?php echo $text_disabled; ?>
+                    </label>
+                </div>
+              </div>
+              <div class="form-group">
+                <label class="col-sm-2 control-label"><?php echo $entry_metatags_category; ?></label>
+                <div class="col-sm-10">
+                    <label class="radio-inline">
+                    <input type="radio" name="metatags_category" value="1" <?php echo $metatags_category ? 'CHECKED' : ''; ?> /> <?php echo $text_enabled; ?>
+                    </label>
+                    <label class="radio-inline">
+                    <input type="radio" name="metatags_category" value="0" <?php echo !$metatags_category ? 'CHECKED' : ''; ?> /> <?php echo $text_disabled; ?>
+                    </label>
+                </div>
+              </div>
+              <div class="form-group">
+                <label class="col-sm-2 control-label"><?php echo $text_one_time_only; ?></label>
+                <div class="col-sm-10">
+                    <label class="radio-inline">
+                    <input type="radio" name="metatags_one_time_only" value="1" <?php echo $metatags_one_time_only ? 'CHECKED' : ''; ?> /> <?php echo $text_one_time_only; ?>
+                    </label>
+                    <label class="radio-inline">
+                    <input type="radio" name="metatags_one_time_only" value="0" <?php echo !$metatags_one_time_only ? 'CHECKED' : ''; ?> /> <?php echo $text_on_each_update; ?>
+                    </label>
+                </div>
+              </div>
+              <div class="form-group">
+                <label class="col-sm-2 control-label"><?php echo $entry_metatags_send_disabled; ?></label>
+                <div class="col-sm-10">
+                    <label class="radio-inline">
+                    <input type="radio" name="metatags_send_disabled" value="1" <?php echo $metatags_send_disabled ? 'CHECKED' : ''; ?> /> <?php echo $text_enabled; ?>
+                    </label>
+                    <label class="radio-inline">
+                    <input type="radio" name="metatags_send_disabled" value="0" <?php echo !$metatags_send_disabled ? 'CHECKED' : ''; ?> /> <?php echo $text_disabled; ?>
                     </label>
                 </div>
               </div>

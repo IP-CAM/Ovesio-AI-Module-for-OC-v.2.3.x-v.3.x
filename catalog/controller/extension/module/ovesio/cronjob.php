@@ -32,6 +32,7 @@ class ControllerExtensionModuleOvesioCronjob extends Controller
 
         $status = (int) $this->config->get($this->module_key . '_description_status');
         $status = $status + (int) $this->config->get($this->module_key . '_translation_status');
+        $status = $status + (int) $this->config->get($this->module_key . '_metatags_status');
 
         if($status == 0) {
             return $this->setOutput(['error' => 'All operations are disabled']);
@@ -47,9 +48,19 @@ class ControllerExtensionModuleOvesioCronjob extends Controller
         if(!empty($list))
         {
             foreach($list as $entry) {
-                if($entry['expired_description'] || $entry['expired_translation']) {
-                    $type = $entry['expired_description'] ? 'description' : 'translate';
-                    $this->model->updateExpired($entry['list_id'], $type);
+                if($entry['expired_description'] || $entry['expired_translation'] || $entry['expired_metatags']) {
+                    $type = null;
+                    if($entry['expired_description']) {
+                        $type = "description";
+                    }elseif($entry['expired_translation']) {
+                        $type = "translate";
+                    }elseif($entry['expired_metatags']) {
+                        $type = "metatags";
+                    }
+
+                    if($type) {
+                        $this->model->updateExpired($entry['list_id'], $type);
+                    }
                 }
 
                 $this->ovesio->{$entry['resource']}($entry['resource_id']);

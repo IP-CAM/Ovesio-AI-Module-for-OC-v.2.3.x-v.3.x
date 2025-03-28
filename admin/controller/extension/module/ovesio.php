@@ -3,7 +3,7 @@
  * Name: Ovesio
  * Url: https://ovesio.com/
  * Author: Aweb Design SRL
- * Version: 1.3
+ * Version: 1.4
  */
 
 class ControllerExtensionModuleOvesio extends Controller
@@ -65,6 +65,16 @@ class ControllerExtensionModuleOvesio extends Controller
         'minimum_category_descrition' => 300,
         'create_description_one_time_only' => 1,
         //'translate_one_time_only' => 0,
+
+        /**
+         * Metatags
+         */
+        'metatags_status' => 0,
+        'metatags_product' => 0,
+        'metatags_send_stock_0' => 0,
+        'metatags_category' => 0,
+        'metatags_one_time_only' => 0,
+        'metatags_send_disabled' => 0,
     ];
 
     private $token = 'token';
@@ -125,6 +135,7 @@ class ControllerExtensionModuleOvesio extends Controller
         $data['text_cronjob_helper'] = $this->language->get('text_cronjob_helper');
         $data['text_description_generator_info'] = $this->language->get('text_description_generator_info');
         $data['text_translate_after_description_generator_info'] = $this->config->get($this->module_key . '_description_status') ? $this->language->get('text_translate_after_description_generator_info') : null;
+        $data['text_metatags_generator_info'] = $this->config->get($this->module_key . '_description_status') ||  $this->config->get($this->module_key . '_translation_status') ? $this->language->get('text_metatags_generator_info') : null;
         $data['text_one_time_only'] = $this->language->get('text_one_time_only');
         $data['text_on_each_update'] = $this->language->get('text_on_each_update');
         $data['text_other_translations'] = $this->language->get('text_other_translations');
@@ -137,6 +148,7 @@ class ControllerExtensionModuleOvesio extends Controller
         $data['tab_general'] = $this->language->get('tab_general');
         $data['tab_description_generator'] = $this->language->get('tab_description_generator');
         $data['tab_language_association'] = $this->language->get('tab_language_association');
+        $data['tab_metatags'] = $this->language->get('tab_metatags');
 
         // Entry
         $data['entry_status'] = $this->language->get('entry_status');
@@ -156,6 +168,10 @@ class ControllerExtensionModuleOvesio extends Controller
         $data['entry_minimum_description_length_product'] = $this->language->get('entry_minimum_description_length_product');
         $data['entry_create_a_new_description'] = $this->language->get('entry_create_a_new_description');
         $data['entry_create_a_new_translation'] = $this->language->get('entry_create_a_new_translation');
+        $data['entry_metatags_product'] = $this->language->get('entry_metatags_product');
+        $data['entry_metatags_send_stock_0'] = $this->language->get('entry_metatags_send_stock_0');
+        $data['entry_metatags_send_disabled'] = $this->language->get('entry_metatags_send_disabled');
+        $data['entry_metatags_category'] = $this->language->get('entry_metatags_category');
 
         $data['button_cancel'] = $this->language->get('button_cancel');
         $data['button_save'] = $this->language->get('button_save');
