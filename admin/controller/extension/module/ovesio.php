@@ -295,7 +295,7 @@ class ControllerExtensionModuleOvesio extends Controller
 
         $data['callback'] = HTTPS_CATALOG . 'index.php?route=extension/module/ovesio/callback&hash=' . $data['hash'];
 
-        $data['description_cronjob'] = '* * * * */5 curl -k -L "' . HTTPS_CATALOG . 'index.php?route=extension/module/ovesio/cronjob&hash=' . $data['hash'] . '" > /dev/null 2>&1';
+        $data['description_cronjob'] = '*/5 * * * * curl -k -L "' . HTTPS_CATALOG . 'index.php?route=extension/module/ovesio/cronjob&hash=' . $data['hash'] . '" > /dev/null 2>&1';
 
 		$data['header'] = $this->load->controller('common/header');
 		$data['column_left'] = $this->load->controller('common/column_left');

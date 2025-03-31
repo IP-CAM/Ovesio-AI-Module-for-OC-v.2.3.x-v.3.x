@@ -80,7 +80,7 @@ From the **AI Description Generator** tab:
 ### Cron Integration
 - Automate processing with a cron job:
   ```
-  * * * * */5 curl -k -L "https://yourdomain.com/index.php?route=extension/module/ovesio/cronjob&hash=YOUR_HASH" > /dev/null 2>&1
+  */5 * * * * curl -k -L "https://yourdomain.com/index.php?route=extension/module/ovesio/cronjob&hash=YOUR_HASH" > /dev/null 2>&1
   ```
 - The cron job:
   - Runs every 5 minutes
