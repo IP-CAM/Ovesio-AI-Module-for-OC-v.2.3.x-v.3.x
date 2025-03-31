@@ -284,6 +284,13 @@
                 </div>
               </div>
               <div class="form-group">
+                <label class="col-sm-2 control-label"><?php echo $text_only_for_action; ?></label>
+                <div class="col-sm-10">
+                    <input type="hidden" name="metatags_only_for_action" value="0" />
+                    <input type="checkbox" name="metatags_only_for_action" value="1" <?php echo $metatags_only_for_action && $description_status ? 'CHECKED' : ''; ?> <?php if(!$description_status) {?>disabled="disabled"<?php } ?>/> <?php echo $text_only_for_generated_descriptions; ?>
+                </div>
+              </div>
+              <div class="form-group">
                 <label class="col-sm-2 control-label"><?php echo $entry_metatags_send_disabled; ?></label>
                 <div class="col-sm-10">
                     <label class="radio-inline">

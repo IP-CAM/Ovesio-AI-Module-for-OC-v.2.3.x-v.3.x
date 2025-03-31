@@ -3,7 +3,7 @@
  * Name: Ovesio
  * Url: https://ovesio.com/
  * Author: Aweb Design SRL
- * Version: 1.4.1
+ * Version: 1.4.2
  */
 
 class ControllerExtensionModuleOvesio extends Controller
@@ -74,6 +74,7 @@ class ControllerExtensionModuleOvesio extends Controller
         'metatags_send_stock_0' => 0,
         'metatags_category' => 0,
         'metatags_one_time_only' => 0,
+        'metatags_only_for_action' => 0,
         'metatags_send_disabled' => 0,
     ];
 
@@ -137,6 +138,9 @@ class ControllerExtensionModuleOvesio extends Controller
 
         $data['text_translate_after_description_generator_info'] = $this->config->get($this->module_key . '_description_status') ||  $this->config->get($this->module_key . '_metatags_status') ? $this->language->get('text_translate_after_description_generator_info') : null;
         $data['text_metatags_generator_info'] = $this->config->get($this->module_key . '_description_status') ? $this->language->get('text_metatags_generator_info') : null;
+        $data['text_only_for_action'] = $this->language->get('text_only_for_action');
+        $data['text_only_for_generated_descriptions'] = $this->language->get('text_only_for_generated_descriptions');
+        $data['text_only_for_all'] = $this->language->get('text_only_for_all');
         $data['text_one_time_only'] = $this->language->get('text_one_time_only');
         $data['text_on_each_update'] = $this->language->get('text_on_each_update');
         $data['text_other_translations'] = $this->language->get('text_other_translations');

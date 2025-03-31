@@ -26,8 +26,28 @@ class ModelExtensionModuleOvesio extends Model
         }
 
         $query = $this->db->query("SELECT cd.* FROM " . DB_PREFIX . "category_description as cd
+            JOIN " . DB_PREFIX . "category as c ON c.category_id = cd.category_id
+            WHERE cd.language_id = {$this->from_language_id} $where
+            ORDER BY c.category_id");
+
+        return $query->rows;
+    }
+
+    public function getCategoriesWithDescriptionDependency($category_ids = [], $status, $language)
+    {
+        $where = '';
+        if (!empty($category_ids)) {
+            $where = 'AND c.category_id IN (' . implode(',', $category_ids) . ')';
+        }
+
+        if (!$status) {
+            $where .= " AND c.status != 0";
+        }
+
+        $query = $this->db->query("SELECT cd.* FROM " . DB_PREFIX . "category_description as cd
         JOIN " . DB_PREFIX . "category as c ON c.category_id = cd.category_id
-        WHERE cd.language_id = {$this->from_language_id} $where
+        JOIN " . DB_PREFIX . "ovesio_list as ol ON ol.resource = 'category' AND ol.resource_id = c.category_id AND ol.lang = '{$language}'
+        WHERE cd.language_id = {$this->from_language_id} AND ol.generate_description_id > 0 AND ol.generate_description_status = 1 $where
         ORDER BY c.category_id");
 
         return $query->rows;
@@ -49,9 +69,33 @@ class ModelExtensionModuleOvesio extends Model
         }
 
         $query = $this->db->query("SELECT pd.* FROM " . DB_PREFIX . "product_description as pd
-        JOIN " . DB_PREFIX . "product as p ON p.product_id = pd.product_id
-        WHERE pd.language_id = {$this->from_language_id} $where
-        ORDER BY p.product_id");
+            JOIN " . DB_PREFIX . "product as p ON p.product_id = pd.product_id
+            WHERE pd.language_id = {$this->from_language_id} $where
+            ORDER BY p.product_id");
+
+        return $query->rows;
+    }
+
+    public function getProductsWithDescriptionDependency($product_id = [], $status, $out_of_stock, $language)
+    {
+        $where = '';
+        if (!empty($product_id)) {
+            $where = ' AND p.product_id IN (' . implode(',', $product_id) . ')';
+        }
+
+        if (!$out_of_stock) {
+			$where .= " AND p.quantity > '0'";
+		}
+
+        if (!$status) {
+            $where .= " AND p.status != 0";
+        }
+
+        $query = $this->db->query("SELECT pd.* FROM " . DB_PREFIX . "product_description as pd
+            JOIN " . DB_PREFIX . "product as p ON p.product_id = pd.product_id
+            JOIN " . DB_PREFIX . "ovesio_list as ol ON ol.resource = 'product' AND ol.resource_id = p.product_id AND ol.lang = '{$language}'
+            WHERE pd.language_id = {$this->from_language_id} AND ol.generate_description_id > 0 AND ol.generate_description_status = 1 $where
+            ORDER BY p.product_id");
 
         return $query->rows;
     }

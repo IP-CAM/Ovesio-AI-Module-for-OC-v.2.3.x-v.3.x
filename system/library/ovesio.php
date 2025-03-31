@@ -774,10 +774,20 @@ class Ovesio
     {
         $hashList = $this->model->getHashList('category', $category_ids, $this->catalog_lang, 'metatags');
 
-        $categories = $this->model->getCategories(
-            $category_ids,
-            $this->config->get($this->module_key . '_send_disabled')
-        );
+        $only_for_action = (int)$this->config->get($this->module_key . '_metatags_only_for_action');
+        if($only_for_action == 1) {
+            $categories = $this->model->getCategoriesWithDescriptionDependency(
+                $category_ids,
+                $this->config->get($this->module_key . '_send_disabled'),
+                $this->catalog_lang
+            );
+        } else {
+            $categories = $this->model->getCategories(
+                $category_ids,
+                $this->config->get($this->module_key . '_send_disabled')
+            );
+        }
+
         if(empty($categories)){
             $this->ignoreMoveOnNextEvent('category', $category_ids, 'metatags', "Not found or disabled");
             return;
@@ -822,11 +832,22 @@ class Ovesio
     {
         $hashList = $this->model->getHashList('product', $product_ids, $this->catalog_lang, 'metatags');
 
-        $products = $this->model->getProducts(
-            $product_ids,
-            $this->config->get($this->module_key . '_metatags_send_disabled'),
-            $this->config->get($this->module_key . '_metatags_send_stock_0')
-        );
+        $only_for_action = (int)$this->config->get($this->module_key . '_metatags_only_for_action');
+        if($only_for_action == 1) {
+            $products = $this->model->getProductsWithDescriptionDependency(
+                $product_ids,
+                $this->config->get($this->module_key . '_metatags_send_disabled'),
+                $this->config->get($this->module_key . '_metatags_send_stock_0'),
+                $this->catalog_lang
+            );
+        } else {
+            $products = $this->model->getProducts(
+                $product_ids,
+                $this->config->get($this->module_key . '_metatags_send_disabled'),
+                $this->config->get($this->module_key . '_metatags_send_stock_0')
+            );
+        }
+
         if(empty($products)){
             $this->ignoreMoveOnNextEvent('product', $product_ids, 'metatags', "Not found, disabled or out of stock");
             return;
