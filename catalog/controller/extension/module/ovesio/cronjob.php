@@ -51,11 +51,11 @@ class ControllerExtensionModuleOvesioCronjob extends Controller
                 if($entry['expired_description'] || $entry['expired_translation'] || $entry['expired_metatags']) {
                     $type = null;
                     if($entry['expired_description']) {
-                        $type = "description";
-                    }elseif($entry['expired_translation']) {
-                        $type = "translate";
+                        $type = "generate_description";
                     }elseif($entry['expired_metatags']) {
                         $type = "metatags";
+                    }elseif($entry['expired_translation']) {
+                        $type = "translate";
                     }
 
                     if($type) {

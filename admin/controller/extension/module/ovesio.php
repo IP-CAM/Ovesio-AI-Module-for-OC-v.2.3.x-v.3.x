@@ -3,7 +3,7 @@
  * Name: Ovesio
  * Url: https://ovesio.com/
  * Author: Aweb Design SRL
- * Version: 1.4
+ * Version: 1.4.1
  */
 
 class ControllerExtensionModuleOvesio extends Controller
@@ -134,8 +134,9 @@ class ControllerExtensionModuleOvesio extends Controller
         $data['text_cronjob'] = $this->language->get('text_cronjob');
         $data['text_cronjob_helper'] = $this->language->get('text_cronjob_helper');
         $data['text_description_generator_info'] = $this->language->get('text_description_generator_info');
-        $data['text_translate_after_description_generator_info'] = $this->config->get($this->module_key . '_description_status') ? $this->language->get('text_translate_after_description_generator_info') : null;
-        $data['text_metatags_generator_info'] = $this->config->get($this->module_key . '_description_status') ||  $this->config->get($this->module_key . '_translation_status') ? $this->language->get('text_metatags_generator_info') : null;
+
+        $data['text_translate_after_description_generator_info'] = $this->config->get($this->module_key . '_description_status') ||  $this->config->get($this->module_key . '_metatags_status') ? $this->language->get('text_translate_after_description_generator_info') : null;
+        $data['text_metatags_generator_info'] = $this->config->get($this->module_key . '_description_status') ? $this->language->get('text_metatags_generator_info') : null;
         $data['text_one_time_only'] = $this->language->get('text_one_time_only');
         $data['text_on_each_update'] = $this->language->get('text_on_each_update');
         $data['text_other_translations'] = $this->language->get('text_other_translations');
@@ -147,7 +148,7 @@ class ControllerExtensionModuleOvesio extends Controller
 
         $data['tab_general'] = $this->language->get('tab_general');
         $data['tab_description_generator'] = $this->language->get('tab_description_generator');
-        $data['tab_language_association'] = $this->language->get('tab_language_association');
+        $data['tab_translate'] = $this->language->get('tab_translate');
         $data['tab_metatags'] = $this->language->get('tab_metatags');
 
         // Entry

@@ -68,16 +68,20 @@ class ControllerExtensionModuleOvesioCallback extends Controller
         $language_code = $data['to'];
 
         $status = 0;
-        $type = !empty($this->request->get['type']) ? $this->request->get['type'] : 'translate';
+        if (empty($this->request->get['type'])) {
+            throw new Exception('Wrong request');
+        }
+
+        $type = $this->request->get['type'];
         switch($type) {
-            case 'translate':
-                $status = $this->config->get($this->module_key . '_translation_status');
-                break;
             case 'generate_description':
                 $status = $this->config->get($this->module_key . '_description_status');
                 break;
             case 'metatags':
                 $status = $this->config->get($this->module_key . '_metatags_status');
+                break;
+            case 'translate':
+                $status = $this->config->get($this->module_key . '_translation_status');
                 break;
         }
 
@@ -135,10 +139,10 @@ class ControllerExtensionModuleOvesioCallback extends Controller
         // move to next event!
         $this->load->library('ovesio');
         if($type == 'generate_description') {
-            $this->ovesio->add('translate', $resource, $resource_id);
-            $this->ovesio->sendData();
-        } elseif($type == 'translate') {
             $this->ovesio->add('metatags', $resource, $resource_id);
+            $this->ovesio->sendData();
+        } elseif($type == 'metatags') {
+            $this->ovesio->add('translate', $resource, $resource_id);
             $this->ovesio->sendData();
         }
 

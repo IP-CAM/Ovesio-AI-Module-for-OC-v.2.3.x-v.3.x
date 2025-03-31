@@ -33,15 +33,15 @@ $_['text_translation_callback_helper'] = '* This is the URL where translations/d
 $_['text_cronjob'] = 'Cronjob';
 $_['text_cronjob_helper'] = '* Each time the cron runs, it will process only 40 resources at a time.';
 $_['text_description_generator_info'] = 'Changing the options in this section may affect translations already made with Ovesio. If you re-generate descriptions for products or categories that have already been translated, they will need to be translated again.';
-$_['text_translate_after_description_generator_info'] = 'Since you have enabled automatic description generation, resource translation will occur after the description is generated, according to the settings you chose.';
-$_['text_metatags_generator_info'] = 'Since you have enabled automatic description generation and/or translations, metatags generator will occur after the description is generated & text translated.';
+$_['text_translate_after_description_generator_info'] = 'Since you have enabled automatic description and/or metatags generator, resource translation will occur after the description is generated, according to the settings you chose.';
+$_['text_metatags_generator_info'] = 'Since you have enabled automatic description generation, metatags generator will occur after the description is generated';
 $_['text_one_time_only'] = 'One time only';
 $_['text_on_each_update'] = 'On each resource update';
 $_['text_other_translations'] = '* product options, product attributes and product attribute groups will be translated as well.';
 
 $_['tab_general'] = 'General';
 $_['tab_description_generator'] = 'AI Description Generator';
-$_['tab_language_association'] = 'Translate Settings';
+$_['tab_translate'] = 'Translate Settings';
 $_['tab_metatags'] = 'AI SEO MetaTags generator';
 
 // Entry

@@ -13,15 +13,15 @@ class Ovesio
     private $request_data = [];
     private $data = [];
     private $endpoint = [
-        'translate' => '/translate/request',
         'generate_description' => '/ai/generate-description',
-        'metatags' => '/ai/generate-seo'
+        'metatags' => '/ai/generate-seo',
+        'translate' => '/translate/request'
     ];
     private $priorities = [];
     private $priority = [
         'generate_description' => 1,
-        'translate' => 2,
-        'metatags' => 3
+        'metatags' => 2,
+        'translate' => 3,
     ];
     private $catalog_lang = null;
 
@@ -76,7 +76,6 @@ class Ovesio
                         $this->request_data = [];
 
                         if($event_type == 'generate_description') {
-
                             $status = $this->config->get($this->module_key . '_description_status');
 
                             //Check other status types
@@ -84,7 +83,14 @@ class Ovesio
                                 $status = $this->config->get($this->module_key . '_generate_' . $resource . '_description');
                             }
 
-                        } elseif($event_type == 'translate') {
+                        } elseif($event_type == 'metatags') {
+                            $status = $this->config->get($this->module_key . '_metatags_status');
+
+                            //Check other status types
+                            if($status && in_array($resource, ['product', 'category'])) {
+                                $status = $this->config->get($this->module_key . '_metatags_' . $resource);
+                            }
+                        } else {
                             $status = $this->config->get($this->module_key . '_translation_status');
 
                             //Check other status types
@@ -93,13 +99,6 @@ class Ovesio
                                 if(empty($translate_fields[$resource])){
                                     $status = 0;
                                 }
-                            }
-                        } else {
-                            $status = $this->config->get($this->module_key . '_metatags_status');
-
-                            //Check other status types
-                            if($status && in_array($resource, ['product', 'category'])) {
-                                $status = $this->config->get($this->module_key . '_metatags_' . $resource);
                             }
                         }
 
@@ -338,7 +337,7 @@ class Ovesio
 
         $hash = $this->config->get($this->module_key . '_hash');
         $server = defined('HTTPS_CATALOG') ? HTTPS_CATALOG : HTTPS_SERVER;
-        $this->request_data['callback_url'] = $server . 'index.php?route=extension/module/ovesio/callback&hash=' . $hash;
+        $this->request_data['callback_url'] = $server . 'index.php?route=extension/module/ovesio/callback&type=translate&hash=' . $hash;
     }
 
     /**
@@ -909,11 +908,11 @@ class Ovesio
             ]);
 
             if($event_type == 'generate_description') {
-                // Send to translate
-                $this->add('translate', $resource, $resource_id);
-            } elseif($event_type == 'translate') {
                 // Send to metatags
                 $this->add('metatags', $resource, $resource_id);
+            } elseif($event_type == 'translate') {
+                // Send to translate
+                $this->add('translate', $resource, $resource_id);
             }
         }
 
