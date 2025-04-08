@@ -19,10 +19,14 @@ $_['text_categories'] = 'Categories';
 
 $_['text_name'] = 'Name';
 $_['text_description'] = 'Description';
+$_['text_attributes'] = 'Attributes';
 $_['text_tag'] = 'Tags';
 $_['text_meta_title'] = 'Meta Title';
 $_['text_meta_description'] = 'Meta Description';
 $_['text_meta_keyword'] = 'Meta Keywords';
+$_['text_groups_and_attributes'] = 'Groups and Attributes';
+$_['text_options'] = 'Options';
+$_['text_others'] = 'Others';
 $_['text_enabled'] = 'Enabled';
 $_['text_disabled'] = 'Disabled';
 $_['text_yes'] = 'Yes';
@@ -40,7 +44,7 @@ $_['text_only_for_generated_descriptions'] = 'Only for resources with generated 
 $_['text_only_for_all'] = 'For all resources';
 $_['text_one_time_only'] = 'One time only';
 $_['text_on_each_update'] = 'On each resource update';
-$_['text_other_translations'] = '* product options, product attributes and product attribute groups will be translated as well.';
+$_['text_other_translations'] = '* in order to translate products you need to translate groups, attributes & options as well';
 
 $_['tab_general'] = 'General';
 $_['tab_description_generator'] = 'AI Description Generator';

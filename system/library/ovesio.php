@@ -568,16 +568,19 @@ class Ovesio
             return;
         }
 
-        // chunk get attributes based on product_id
-        $product_attributes = $this->model->getProductsAttributes($product_ids);
+        $product_attributes = $attributes = [];
+        if(!empty($translate_fields['product']['attributes'])) {
+            // chunk get attributes based on product_id
+            $product_attributes = $this->model->getProductsAttributes($product_ids);
 
-        $attribute_ids = [];
-        foreach($product_attributes as $attributes) {
-            $attribute_ids = array_merge($attribute_ids, array_keys($attributes));
+            $attribute_ids = [];
+            foreach($product_attributes as $attributes) {
+                $attribute_ids = array_merge($attribute_ids, array_keys($attributes));
+            }
+
+            $attributes = $this->model->getAttributes($attribute_ids);
+            $attributes = array_column($attributes, 'name', 'attribute_id');
         }
-
-        $attributes = $this->model->getAttributes($attribute_ids);
-        $attributes = array_column($attributes, 'name', 'attribute_id');
 
         foreach ($products as $i => $product) {
             $push = [
@@ -618,6 +621,12 @@ class Ovesio
 
     protected function translate_attribute($attribute_ids)
     {
+        $translate_fields = (array)$this->config->get($this->module_key . '_translate_fields');
+        if(empty($translate_fields['others']['groups_and_attributes'])) {
+            $this->ignoreMoveOnNextEvent('attribute', $attribute_ids, 'translate', "Groups and Attributes translation is disabled");
+            return;
+        }
+
         $attribute_groups = $this->model->getAttributeGroups();
         if(empty($attribute_groups)){
             $this->ignoreMoveOnNextEvent('attribute', $attribute_ids, 'translate', "No attribute groups found");
@@ -669,6 +678,12 @@ class Ovesio
 
     protected function translate_attribute_group($attribute_group_ids)
     {
+        $translate_fields = (array)$this->config->get($this->module_key . '_translate_fields');
+        if(empty($translate_fields['others']['groups_and_attributes'])) {
+            $this->ignoreMoveOnNextEvent('attribute_group', $attribute_group_ids, 'translate', "Groups and Attributes translation is disabled");
+            return;
+        }
+
         $attribute_groups = $this->model->getAttributeGroups($attribute_group_ids);
         $attribute_groups = array_column($attribute_groups, null, 'attribute_group_id');
         if(empty($attribute_groups)){
@@ -717,6 +732,12 @@ class Ovesio
 
     protected function translate_option($option_ids)
     {
+        $translate_fields = (array)$this->config->get($this->module_key . '_translate_fields');
+        if(empty($translate_fields['others']['options'])) {
+            $this->ignoreMoveOnNextEvent('option', $option_ids, 'translate', "Options translation is disabled");
+            return;
+        }
+
         $options = $this->model->getOptions($option_ids);
         if(empty($options)){
             $this->ignoreMoveOnNextEvent('option', $option_ids, 'translate', "No options found");

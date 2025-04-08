@@ -430,6 +430,16 @@
                 </div>
                 <?php } ?>
               </div>
+              <br>
+              <strong><?php echo $text_others; ?></strong>
+              <div class="well well-sm" style="height: 180px; overflow: auto;">
+                <?php foreach ($others_translates as $translate) { ?>
+                <div>
+                  <input type="hidden" name="translate_fields[others][<?php echo $translate['key']; ?>]" value="0">
+                  <input type="checkbox" name="translate_fields[others][<?php echo $translate['key']; ?>]" value="1" id="others-translate-<?php echo $translate['key']; ?>" <?php echo $translate_fields['others'][$translate['key']] ? 'CHECKED' : ''; ?>> <label for="others-translate-<?php echo $translate['key']; ?>"><?php echo $translate['label']; ?></label>
+                </div>
+                <?php } ?>
+              </div>
               <?php echo $text_other_translations; ?><br/><br/>
             </fieldset>
             <fieldset>

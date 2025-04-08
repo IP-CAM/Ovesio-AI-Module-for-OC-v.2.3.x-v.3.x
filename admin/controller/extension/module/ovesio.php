@@ -3,7 +3,7 @@
  * Name: Ovesio
  * Url: https://ovesio.com/
  * Author: Aweb Design SRL
- * Version: 1.4.2
+ * Version: 1.4.3
  */
 
 class ControllerExtensionModuleOvesio extends Controller
@@ -47,12 +47,17 @@ class ControllerExtensionModuleOvesio extends Controller
             'product' => [
                 'name' => 1,
                 'description' => 1,
+                'attributes' => 1,
                 'tag' => 0,
                 'meta_title' => 0,
                 'meta_description' => 0,
                 'meta_keyword' => 0,
                 // 'image_title',
                 // 'image_alt',
+            ],
+            'others' => [
+                'groups_and_attributes' => 1,
+                'options' => 1,
             ]
         ],
         'description_status' => 0,
