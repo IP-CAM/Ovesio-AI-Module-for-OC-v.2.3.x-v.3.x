@@ -952,7 +952,7 @@ class Ovesio
             if($event_type == 'generate_description') {
                 // Send to metatags
                 $this->add('metatags', $resource, $resource_id);
-            } elseif($event_type == 'translate') {
+            } elseif($event_type == 'metatags') {
                 // Send to translate
                 $this->add('translate', $resource, $resource_id);
             }
