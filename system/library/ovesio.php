@@ -803,7 +803,7 @@ class Ovesio
 
             // only if is different from name...usual mistake
             $_description = strip_tags($this->decode($category['description']));
-            if(strtolower(preg_replace("/[^A-Za-z0-9 ]/", '', $_description)) != strtolower(preg_replace("/[^A-Za-z0-9 ]/", '', strip_tags($this->decode($category['name']))))) {
+            if(trim(strtolower(preg_replace("/[^A-Za-z0-9 ]/", '', $_description))) != trim(strtolower(preg_replace("/[^A-Za-z0-9 ]/", '', strip_tags($this->decode($category['name'])))))) {
                 $push['content']['description'] = $category['description'];
             }
 
@@ -876,7 +876,7 @@ class Ovesio
 
             // only if is different from name...usual mistake
             $_description = strip_tags($this->decode($product['description']));
-            if(strtolower(preg_replace("/[^A-Za-z0-9 ]/", '', $_description)) != strtolower(preg_replace("/[^A-Za-z0-9 ]/", '', strip_tags($this->decode($product['name']))))) {
+            if(trim(strtolower(preg_replace("/[^A-Za-z0-9 ]/", '', $_description))) != trim(strtolower(preg_replace("/[^A-Za-z0-9 ]/", '', strip_tags($this->decode($product['name'])))))) {
                 $push['content']['description'] = $product['description'];
             }
 
