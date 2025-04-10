@@ -442,7 +442,7 @@ class ModelExtensionModuleOvesio extends Model
                 FROM " . DB_PREFIX . "option_description as od
                 JOIN " . DB_PREFIX . "option as o ON o.option_id = od.option_id
                 WHERE od.language_id = {$this->from_language_id}
-            UNION";
+            UNION ";
         }
 
         $sql .= "SELECT 'category' as resource, cd.category_id as resource_id
